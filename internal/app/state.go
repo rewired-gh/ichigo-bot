@@ -71,7 +71,7 @@ func NewState(config *util.Config) (state *State) {
 	for _, user := range allUsers {
 		state.SessionMap[user] = &Session{
 			Model:           config.DefaultModel,
-			ChatRecords:     make([]ChatRecord, 16),
+			ChatRecords:     make([]ChatRecord, 0, 16),
 			State:           StateIdle,
 			StopChannel:     make(chan struct{}),
 			ResponseChannel: make(chan string),

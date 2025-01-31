@@ -54,7 +54,7 @@ func StartBotService(config *util.Config) {
 		case "chat":
 			handleChatAction(botState, inMsg, session)
 		case "new":
-			session.ChatRecords = make([]ChatRecord, 16)
+			session.ChatRecords = make([]ChatRecord, 0, 16)
 			util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
 		case "set":
 			model := inMsg.CommandArguments()
@@ -117,7 +117,7 @@ func StartBotService(config *util.Config) {
 				util.SendMessageQuick(inMsg.Chat.ID, "Roger. Please restart the daemon manually.", botState.Bot)
 			case "clear":
 				for _, session := range botState.SessionMap {
-					session.ChatRecords = make([]ChatRecord, 16)
+					session.ChatRecords = make([]ChatRecord, 0, 16)
 				}
 				util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
 			}
