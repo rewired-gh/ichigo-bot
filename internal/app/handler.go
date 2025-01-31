@@ -198,10 +198,10 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 	}
 
 	req := openai.ChatCompletionRequest{
-		Messages:  openaiMsgs,
-		Model:     model.Name,
-		MaxTokens: botState.Config.MaxTokensPerResponse,
-		Stream:    true,
+		Messages:            openaiMsgs,
+		Model:               model.Name,
+		MaxCompletionTokens: botState.Config.MaxTokensPerResponse,
+		Stream:              true,
 	}
 	stream, err := client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
