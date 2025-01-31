@@ -71,6 +71,12 @@ func StartBotService(config *util.Config) {
 				fmt.Sprintf("Current Model: %s (%s) by %s", modelInfo.Name, model, modelInfo.Provider),
 				botState.Bot,
 			)
+		case "list":
+			var modelList string
+			for alias, model := range botState.CachedModelMap {
+				modelList += fmt.Sprintf("%s: %s by %s\n", alias, model.Name, model.Provider)
+			}
+			util.SendMessageQuick(inMsg.Chat.ID, modelList, botState.Bot)
 		case "undo":
 			if len(session.ChatRecords) > 0 && session.ChatRecords[len(session.ChatRecords)-1].Role == RoleBot {
 				session.ChatRecords = session.ChatRecords[:len(session.ChatRecords)-1]
@@ -173,6 +179,10 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 	stopChan := session.StopChannel
 	responseContent := ""
 
+	defer func() {
+		session.ResponseChannel <- responseContent
+	}()
+
 	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session), botState.Bot)
 	if err != nil {
 		slog.Error(err.Error())
@@ -197,9 +207,6 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 	}
 
 	defer stream.Close()
-	defer func() {
-		session.ResponseChannel <- responseContent
-	}()
 
 	for {
 		select {

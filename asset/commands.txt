@@ -1,0 +1,9 @@
+chat - Chat with Ichigo (Can be omitted in PM)
+new - Forget my chat history
+set - Set a new chat model
+list - List all chat models
+undo - Forget last round of conversation
+stop - Stop talking right now
+get_config - (Admin only) Get configuration
+set_config - (Admin only) Set configuration
+clear - (Admin only) Clear data
