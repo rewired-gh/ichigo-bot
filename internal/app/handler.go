@@ -86,7 +86,9 @@ func StartBotService(config *util.Config) {
 			}
 			util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
 		case "stop":
-			session.StopChannel <- struct{}{}
+			if session.State == StateResponding {
+				session.StopChannel <- struct{}{}
+			}
 		}
 
 		if slices.Contains(botState.Config.Admins, inMsg.From.ID) {
