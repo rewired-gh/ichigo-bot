@@ -88,6 +88,7 @@ func StartBotService(config *util.Config) {
 		case "stop":
 			if session.State == StateResponding {
 				session.StopChannel <- struct{}{}
+				session.State = StateIdle
 			}
 		}
 
