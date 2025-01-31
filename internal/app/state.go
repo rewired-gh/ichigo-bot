@@ -44,7 +44,8 @@ type State struct {
 	CachedProviderMap map[string]*openai.Client // map of provider name to provider
 	CachedModelMap    map[string]*util.Model    // map of model alias to model
 	SessionMap        map[int64]*Session        // map of user ID to session
-	Bot               *botapi.BotAPI
+	Bot               *botapi.BotAPI            // nullable
+	EditThrottler     util.Throttler
 }
 
 func NewState(config *util.Config) (state *State) {
@@ -53,6 +54,7 @@ func NewState(config *util.Config) (state *State) {
 		CachedProviderMap: make(map[string]*openai.Client),
 		CachedModelMap:    make(map[string]*util.Model),
 		SessionMap:        make(map[int64]*Session),
+		EditThrottler:     util.NewThrottler(3),
 	}
 
 	for _, provider := range config.Providers {

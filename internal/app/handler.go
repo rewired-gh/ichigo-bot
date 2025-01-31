@@ -33,37 +33,26 @@ func StartBotService(config *util.Config) {
 	defer botState.Bot.StopReceivingUpdates()
 
 	for update := range updates {
-		session, exists := botState.SessionMap[update.Message.From.ID]
-		if !exists {
-			slog.Warn("Session not found", "userID", update.Message.From.ID)
-			continue
-		}
-
 		inMsg := update.Message
 		if inMsg == nil {
 			slog.Warn("Nil message")
 			continue
 		}
 
-		if !inMsg.IsCommand() {
-			select {
-			case content := <-session.ResponseChannel:
-				session.ChatRecords = append(session.ChatRecords, ChatRecord{
-					Role:    RoleBot,
-					Content: content,
-				})
-				session.State = StateIdle
-			default:
-			}
-			if session.State == StateResponding {
-				slog.Warn("Ignoring message while responding", "userID", inMsg.From.ID)
-				continue
-			}
+		session, exists := botState.SessionMap[inMsg.From.ID]
+		if !exists {
+			slog.Warn("Session not found", "userID", inMsg.From.ID)
+			continue
+		}
 
+		if !inMsg.IsCommand() {
 			handleChatAction(botState, inMsg, session)
+			continue
 		}
 
 		switch inMsg.Command() {
+		case "chat":
+			handleChatAction(botState, inMsg, session)
 		case "new":
 			session.ChatRecords = make([]ChatRecord, 16)
 			util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
@@ -79,7 +68,7 @@ func StartBotService(config *util.Config) {
 			session.Model = model
 			util.SendMessageQuick(
 				inMsg.Chat.ID,
-				fmt.Sprintf("Model set to %s (%s) by %s", modelInfo.Name, model, modelInfo.Provider),
+				fmt.Sprintf("Current Model: %s (%s) by %s", modelInfo.Name, model, modelInfo.Provider),
 				botState.Bot,
 			)
 		case "undo":
@@ -131,6 +120,20 @@ func StartBotService(config *util.Config) {
 }
 
 func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) {
+	select {
+	case content := <-session.ResponseChannel:
+		session.ChatRecords = append(session.ChatRecords, ChatRecord{
+			Role:    RoleBot,
+			Content: content,
+		})
+		session.State = StateIdle
+	default:
+	}
+	if session.State == StateResponding {
+		slog.Warn("Ignoring message while responding", "userID", inMsg.From.ID)
+		return
+	}
+
 	model, modelExists := botState.CachedModelMap[session.Model]
 	if !modelExists {
 		slog.Error("Model not found in CachedModelMap", "model", session.Model)
@@ -216,7 +219,13 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 			}
 
 			responseContent += response.Choices[0].Delta.Content
-			util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, responseContent, session), botState.Bot)
+			select {
+			case <-botState.EditThrottler.ReadyChannel:
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, responseContent, session), botState.Bot)
+				botState.EditThrottler.ResetChannel <- struct{}{}
+			default:
+			}
+
 		}
 	}
 }
