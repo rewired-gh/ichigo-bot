@@ -5,7 +5,6 @@ import (
 
 	"github.com/rewired-gh/ichigo-bot/internal/app"
 	"github.com/rewired-gh/ichigo-bot/internal/util"
-	"github.com/tillberg/autorestart"
 )
 
 func main() {
@@ -17,8 +16,6 @@ func main() {
 		slog.Error(err.Error())
 		return
 	}
-
-	go autorestart.RestartOnChange()
 
 	for {
 		app.StartBotService(&config)
