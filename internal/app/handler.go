@@ -142,6 +142,12 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 		return
 	}
 
+	upperLimit := botState.Config.MaxChatRecordsPerUser - 2
+	if len(session.ChatRecords) > upperLimit {
+		delta := len(session.ChatRecords) - upperLimit
+		session.ChatRecords = session.ChatRecords[delta:]
+	}
+
 	session.ChatRecords = append(session.ChatRecords, ChatRecord{
 		Role:    RoleUser,
 		Content: inMsg.Text,

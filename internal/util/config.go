@@ -24,14 +24,15 @@ type Model struct {
 }
 
 type Config struct {
-	Token                string     // Telegram bot token
-	Admins               []int64    // list of Telegram user IDs
-	Users                []int64    // list of Telegram user IDs
-	Providers            []Provider // list of OpenAI API endpoint providers
-	Models               []Model
-	DefaultModel         string
-	MaxTokensPerResponse int
-	Debug                bool
+	Token                 string     // Telegram bot token
+	Admins                []int64    // list of Telegram user IDs
+	Users                 []int64    // list of Telegram user IDs
+	Providers             []Provider // list of OpenAI API endpoint providers
+	Models                []Model
+	DefaultModel          string
+	MaxTokensPerResponse  int
+	MaxChatRecordsPerUser int
+	Debug                 bool
 }
 
 func GetDataDir() string {
