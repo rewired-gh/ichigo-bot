@@ -32,6 +32,7 @@ type Config struct {
 	DefaultModel          string
 	MaxTokensPerResponse  int
 	MaxChatRecordsPerUser int
+	UseTelegramify        bool
 	Debug                 bool
 }
 

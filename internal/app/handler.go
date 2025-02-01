@@ -169,8 +169,8 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 }
 
 func wrapMessage(responding bool, content string, session *Session) string {
-	respondingBanner := fmt.Sprintf("💭 *%s*\n", session.Model)
-	finishedBanner := fmt.Sprintf("🤗 *%s*\n", session.Model)
+	respondingBanner := fmt.Sprintf("💭 *%s*\n\n", session.Model)
+	finishedBanner := fmt.Sprintf("🤗 *%s*\n\n", session.Model)
 	if responding {
 		return respondingBanner + content
 	}
@@ -186,15 +186,20 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 		session.ResponseChannel <- responseContent
 	}()
 
-	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session), botState.Bot)
+	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session),
+		botState.Bot, botState.Config.UseTelegramify)
 	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
 
-	openaiMsgs := make([]openai.ChatCompletionMessage, len(session.ChatRecords))
+	openaiMsgs := make([]openai.ChatCompletionMessage, len(session.ChatRecords)+1)
+	openaiMsgs[0] = openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: util.SystemPromptString,
+	}
 	for i, record := range session.ChatRecords {
-		openaiMsgs[i] = record.ToOpenAIChatMessage()
+		openaiMsgs[i+1] = record.ToOpenAIChatMessage()
 	}
 
 	req := openai.ChatCompletionRequest{
@@ -219,7 +224,8 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 			response, err := stream.Recv()
 
 			if errors.Is(err, io.EOF) {
-				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(false, responseContent, session), botState.Bot)
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(false, responseContent, session),
+					botState.Bot, botState.Config.UseTelegramify)
 				return
 			}
 
@@ -231,7 +237,8 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 			responseContent += response.Choices[0].Delta.Content
 			select {
 			case <-botState.EditThrottler.ReadyChannel:
-				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, responseContent, session), botState.Bot)
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, responseContent, session),
+					botState.Bot, botState.Config.UseTelegramify)
 				botState.EditThrottler.ResetChannel <- struct{}{}
 			default:
 			}
