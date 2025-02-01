@@ -9,6 +9,9 @@ pre:
 dev:
 	go run ./cmd/ichigod
 
+debug:
+	dlv debug ./cmd/ichigod
+
 build: pre
 	go build -o ./target ./cmd/ichigod
 

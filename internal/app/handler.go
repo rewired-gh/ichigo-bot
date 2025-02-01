@@ -91,7 +91,7 @@ func StartBotService(config *util.Config) {
 			util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
 		case "stop":
 			if session.State == StateResponding {
-				session.StopChannel <- struct{}{}
+				go func() { session.StopChannel <- struct{}{} }()
 				session.State = StateIdle
 			}
 		}
@@ -145,6 +145,11 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 	if session.State == StateResponding {
 		slog.Warn("Ignoring message while responding", "userID", inMsg.From.ID)
 		return
+	}
+
+	select {
+	case <-session.StopChannel:
+	default:
 	}
 
 	model, modelExists := botState.CachedModelMap[session.Model]
