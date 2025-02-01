@@ -34,6 +34,7 @@ func StartBotService(config *util.Config) {
 
 	for update := range updates {
 		inMsg := update.Message
+		inChat := update.FromChat()
 		if inMsg == nil {
 			slog.Warn("Nil message")
 			continue
@@ -41,11 +42,14 @@ func StartBotService(config *util.Config) {
 
 		session, exists := botState.SessionMap[inMsg.From.ID]
 		if !exists {
-			slog.Warn("Session not found", "userID", inMsg.From.ID)
-			continue
+			session, exists = botState.SessionMap[inChat.ID]
+			if !exists {
+				slog.Warn("Session not found", "userID", inMsg.From.ID, "chatID", inChat.ID)
+				continue
+			}
 		}
 
-		if !inMsg.IsCommand() {
+		if !inMsg.IsCommand() && inChat.IsPrivate() {
 			handleChatAction(botState, inMsg, session)
 			continue
 		}

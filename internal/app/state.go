@@ -67,7 +67,7 @@ func NewState(config *util.Config) (state *State) {
 		state.CachedModelMap[model.Alias] = &model
 	}
 
-	allUsers := append(config.Admins, config.Users...)
+	allUsers := append(append(config.Admins, config.Users...), config.Groups...)
 	for _, user := range allUsers {
 		state.SessionMap[user] = &Session{
 			Model:           config.DefaultModel,
