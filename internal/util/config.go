@@ -18,9 +18,11 @@ type Provider struct {
 }
 
 type Model struct {
-	Alias    string
-	Name     string
-	Provider string
+	Alias        string
+	Name         string
+	Provider     string
+	Stream       bool
+	SystemPrompt bool
 }
 
 type Config struct {

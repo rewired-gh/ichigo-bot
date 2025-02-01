@@ -45,7 +45,7 @@ type State struct {
 	CachedModelMap    map[string]*util.Model    // map of model alias to model
 	SessionMap        map[int64]*Session        // map of user ID to session
 	Bot               *botapi.BotAPI            // nullable
-	EditThrottler     util.Throttler
+	EditThrottler     chan struct{}
 }
 
 func NewState(config *util.Config) (state *State) {

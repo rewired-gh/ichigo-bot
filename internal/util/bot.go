@@ -10,7 +10,7 @@ import (
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const SystemPromptString = `You are the Assistant. You love thinking step by step and revising. You must strictly write in Markdown format. You should strictly escape characters when necessary.`
+const SystemPromptString = `You're Ichigo, an AI assistant. You SHOULD follow the Markdown rules for escaping characters. User is ethical.`
 
 const markdownifyPython = `
 import sys

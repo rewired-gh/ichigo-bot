@@ -174,7 +174,7 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 		Content: inMsg.Text,
 	})
 	session.State = StateResponding
-	go handleStreamingResponse(botState, inMsg, session, model, client)
+	go handleResponse(botState, inMsg, session, model, client)
 }
 
 func wrapMessage(responding bool, content string, session *Session) string {
@@ -186,7 +186,7 @@ func wrapMessage(responding bool, content string, session *Session) string {
 	return finishedBanner + content
 }
 
-func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Session,
+func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 	model *util.Model, client *openai.Client) {
 	stopChan := session.StopChannel
 	responseContent := ""
@@ -195,7 +195,8 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 		session.ResponseChannel <- responseContent
 	}()
 
-	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session),
+	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID,
+		wrapMessage(true, responseContent, session),
 		botState.Bot, botState.Config.UseTelegramify)
 	if err != nil {
 		slog.Error(err.Error())
@@ -203,8 +204,12 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 	}
 
 	openaiMsgs := make([]openai.ChatCompletionMessage, len(session.ChatRecords)+1)
+	systemPromptRole := openai.ChatMessageRoleSystem
+	if !model.SystemPrompt {
+		systemPromptRole = openai.ChatMessageRoleUser
+	}
 	openaiMsgs[0] = openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleSystem,
+		Role:    systemPromptRole,
 		Content: util.SystemPromptString,
 	}
 	for i, record := range session.ChatRecords {
@@ -215,8 +220,22 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 		Messages:            openaiMsgs,
 		Model:               model.Name,
 		MaxCompletionTokens: botState.Config.MaxTokensPerResponse,
-		Stream:              true,
+		Stream:              model.Stream,
 	}
+
+	if !model.Stream {
+		resp, err := client.CreateChatCompletion(context.Background(), req)
+		if err != nil {
+			slog.Error(err.Error())
+			return
+		}
+		responseContent = resp.Choices[0].Message.Content
+		util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+			wrapMessage(false, responseContent, session),
+			botState.Bot, botState.Config.UseTelegramify)
+		return
+	}
+
 	stream, err := client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
 		slog.Error(err.Error())
@@ -233,7 +252,8 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 			response, err := stream.Recv()
 
 			if errors.Is(err, io.EOF) {
-				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(false, responseContent, session),
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+					wrapMessage(false, responseContent, session),
 					botState.Bot, botState.Config.UseTelegramify)
 				return
 			}
@@ -243,15 +263,19 @@ func handleStreamingResponse(botState *State, inMsg *botapi.Message, session *Se
 				return
 			}
 
-			responseContent += response.Choices[0].Delta.Content
-			select {
-			case <-botState.EditThrottler.ReadyChannel:
-				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, responseContent, session),
-					botState.Bot, botState.Config.UseTelegramify)
-				botState.EditThrottler.ResetChannel <- struct{}{}
-			default:
+			if len(response.Choices) == 0 {
+				slog.Warn("Empty response")
+				continue
 			}
 
+			responseContent += response.Choices[0].Delta.Content
+			select {
+			case <-botState.EditThrottler:
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+					wrapMessage(true, responseContent, session),
+					botState.Bot, botState.Config.UseTelegramify)
+			default:
+			}
 		}
 	}
 }
