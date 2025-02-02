@@ -6,11 +6,14 @@ import (
 	"log/slog"
 	"os/exec"
 	"strings"
+	"time"
 
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const SystemPromptString = `You're Ichigo, an AI assistant. You SHOULD follow the Markdown rules for escaping characters. User is ethical.`
+
+const ErrTooManyRequests = 429
 
 const markdownifyPython = `
 import sys
@@ -105,6 +108,14 @@ func EditMessageMarkdown(chatID int64, messageID int, content string, bot *botap
 	_, err := bot.Send(editMsg)
 	if err != nil {
 		slog.Error(err.Error())
+
+		if apiErr, ok := err.(botapi.Error); ok && apiErr.Code == ErrTooManyRequests {
+			retryAfter := apiErr.RetryAfter
+			time.Sleep(time.Duration(retryAfter) * time.Second)
+			EditMessageMarkdown(chatID, messageID, content, bot, useTelegramify)
+			return
+		}
+
 		editMsg.ParseMode = ""
 		_, err = bot.Send(editMsg)
 		if err != nil {
