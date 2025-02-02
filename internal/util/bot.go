@@ -110,8 +110,8 @@ func EditMessageMarkdown(chatID int64, messageID int, content string, bot *botap
 		slog.Error(err.Error())
 
 		if apiErr, ok := err.(botapi.Error); ok && apiErr.Code == ErrTooManyRequests {
-			retryAfter := apiErr.RetryAfter
-			time.Sleep(time.Duration(retryAfter) * time.Second)
+			retryAfter := apiErr.ResponseParameters.RetryAfter
+			time.Sleep(time.Duration(retryAfter+1) * time.Second)
 			EditMessageMarkdown(chatID, messageID, content, bot, useTelegramify)
 			return
 		}
