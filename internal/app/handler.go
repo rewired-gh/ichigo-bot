@@ -203,17 +203,21 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 		return
 	}
 
-	openaiMsgs := make([]openai.ChatCompletionMessage, len(session.ChatRecords)+1)
+	var openaiMsgs []openai.ChatCompletionMessage
 	systemPromptRole := openai.ChatMessageRoleSystem
 	if !model.SystemPrompt {
 		systemPromptRole = openai.ChatMessageRoleUser
 	}
-	openaiMsgs[0] = openai.ChatCompletionMessage{
+	openaiMsgs = append(openaiMsgs, openai.ChatCompletionMessage{
 		Role:    systemPromptRole,
 		Content: util.SystemPromptString,
-	}
-	for i, record := range session.ChatRecords {
-		openaiMsgs[i+1] = record.ToOpenAIChatMessage()
+	})
+	for _, record := range session.ChatRecords {
+		msg := record.ToOpenAIChatMessage()
+		if msg.Role == openai.ChatMessageRoleAssistant && msg.Content == "" {
+			continue
+		}
+		openaiMsgs = append(openaiMsgs, msg)
 	}
 
 	req := openai.ChatCompletionRequest{
