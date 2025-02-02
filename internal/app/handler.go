@@ -234,9 +234,37 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 			return
 		}
 		responseContent = resp.Choices[0].Message.Content
-		util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
-			wrapMessage(false, responseContent, session),
-			botState.Bot, botState.Config.UseTelegramify)
+
+		if len(responseContent) > util.MessageCharacterLimit {
+			leftContent := responseContent[:util.MessageCharacterLimit]
+			rightContent := responseContent[util.MessageCharacterLimit:]
+			util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+				wrapMessage(false, leftContent, session),
+				botState.Bot, botState.Config.UseTelegramify)
+
+			for len(rightContent) > 0 {
+				var chunk string
+				if len(rightContent) > util.MessageCharacterLimit {
+					chunk = rightContent[:util.MessageCharacterLimit]
+					rightContent = rightContent[util.MessageCharacterLimit:]
+				} else {
+					chunk = rightContent
+					rightContent = ""
+				}
+				outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID,
+					wrapMessage(false, chunk, session),
+					botState.Bot, botState.Config.UseTelegramify)
+				if err != nil {
+					slog.Error(err.Error())
+					return
+				}
+			}
+		} else {
+			util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+				wrapMessage(false, responseContent, session),
+				botState.Bot, botState.Config.UseTelegramify)
+		}
+
 		return
 	}
 
@@ -275,15 +303,34 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 
 			responseContent += response.Choices[0].Delta.Content
 			currentEditLen := len(responseContent)
-			if currentEditLen-lastEditLen >= 16 {
-				select {
-				case <-botState.EditThrottler:
-					lastEditLen = currentEditLen
+			if currentEditLen-lastEditLen < 16 {
+				continue
+			}
+
+			select {
+			case <-botState.EditThrottler:
+				lastEditLen = currentEditLen
+
+				if len(responseContent) > util.MessageCharacterLimit {
+					leftContent := responseContent[:util.MessageCharacterLimit]
+					rightContent := responseContent[util.MessageCharacterLimit:]
+					responseContent = rightContent
+					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+						wrapMessage(false, leftContent, session),
+						botState.Bot, botState.Config.UseTelegramify)
+					outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID,
+						wrapMessage(false, rightContent, session),
+						botState.Bot, botState.Config.UseTelegramify)
+					if err != nil {
+						slog.Error(err.Error())
+						return
+					}
+				} else {
 					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
 						wrapMessage(true, responseContent, session),
 						botState.Bot, botState.Config.UseTelegramify)
-				default:
 				}
+			default:
 			}
 		}
 	}

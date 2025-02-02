@@ -17,6 +17,8 @@ const SystemPromptString = `You're Ichigo, an AI assistant. You SHOULD follow th
 
 const ErrTooManyRequests = 429
 
+const MessageCharacterLimit = 4096 - 1
+
 const markdownifyPython = `
 import sys
 from telegramify_markdown import markdownify
@@ -30,20 +32,17 @@ except Exception as e:
 `
 
 func escapeTelegramMarkdownSimple(content string) string {
-	content = strings.ReplaceAll(content, "!", "\\!")
-	content = strings.ReplaceAll(content, ".", "\\.")
-	content = strings.ReplaceAll(content, "=", "\\=")
-	content = strings.ReplaceAll(content, "+", "\\+")
-	content = strings.ReplaceAll(content, "-", "\\-")
-	content = strings.ReplaceAll(content, "(", "\\(")
-	content = strings.ReplaceAll(content, ")", "\\)")
-	content = strings.ReplaceAll(content, "[", "\\[")
-	content = strings.ReplaceAll(content, "]", "\\]")
-	content = strings.ReplaceAll(content, "{", "\\{")
-	content = strings.ReplaceAll(content, "}", "\\}")
-	content = strings.ReplaceAll(content, "~", "\\~")
-	content = strings.ReplaceAll(content, "|", "\\|")
-	content = strings.ReplaceAll(content, "#", "\\#")
+	replacements := []struct {
+		old string
+		new string
+	}{
+		{"!", "\\!"}, {".", "\\."}, {"=", "\\="}, {"+", "\\+"}, {"-", "\\-"},
+		{"(", "\\("}, {")", "\\)"}, {"[", "\\["}, {"]", "\\]"}, {"{", "\\{"},
+		{"}", "\\}"}, {"~", "\\~"}, {"|", "\\|"}, {"#", "\\#"},
+	}
+	for _, r := range replacements {
+		content = strings.ReplaceAll(content, r.old, r.new)
+	}
 	return content
 }
 
@@ -121,6 +120,8 @@ func EditMessageMarkdown(chatID int64, messageID int, content string, bot *botap
 				if errConv == nil {
 					time.Sleep(time.Duration(retryAfter+1) * time.Second)
 					EditMessageMarkdown(chatID, messageID, content, bot, useTelegramify)
+				} else {
+					slog.Error(errConv.Error())
 				}
 			}
 			return
