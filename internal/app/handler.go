@@ -190,13 +190,14 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 	model *util.Model, client *openai.Client) {
 	stopChan := session.StopChannel
 	responseContent := ""
+	currentContent := ""
 
 	defer func() {
 		session.ResponseChannel <- responseContent
 	}()
 
 	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID,
-		wrapMessage(true, responseContent, session),
+		wrapMessage(true, currentContent, session),
 		botState.Bot, botState.Config.UseTelegramify)
 	if err != nil {
 		slog.Error(err.Error())
@@ -286,7 +287,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 
 			if errors.Is(err, io.EOF) {
 				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
-					wrapMessage(false, responseContent, session),
+					wrapMessage(false, currentContent, session),
 					botState.Bot, botState.Config.UseTelegramify)
 				return
 			}
@@ -301,7 +302,9 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 				continue
 			}
 
-			responseContent += response.Choices[0].Delta.Content
+			deltaContent := response.Choices[0].Delta.Content
+			responseContent += deltaContent
+			currentContent += deltaContent
 			currentEditLen := len(responseContent)
 			if currentEditLen-lastEditLen < 16 {
 				continue
@@ -311,10 +314,10 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 			case <-botState.EditThrottler:
 				lastEditLen = currentEditLen
 
-				if len(responseContent) > util.MessageCharacterLimit {
-					leftContent := responseContent[:util.MessageCharacterLimit]
-					rightContent := responseContent[util.MessageCharacterLimit:]
-					responseContent = rightContent
+				if len(currentContent) > util.MessageCharacterLimit {
+					leftContent := currentContent[:util.MessageCharacterLimit]
+					rightContent := currentContent[util.MessageCharacterLimit:]
+					currentContent = rightContent
 					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
 						wrapMessage(false, leftContent, session),
 						botState.Bot, botState.Config.UseTelegramify)
@@ -327,7 +330,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 					}
 				} else {
 					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
-						wrapMessage(true, responseContent, session),
+						wrapMessage(true, currentContent, session),
 						botState.Bot, botState.Config.UseTelegramify)
 				}
 			default:
