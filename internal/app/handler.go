@@ -121,7 +121,8 @@ func StartBotService(config *util.Config) {
 					slog.Error(err.Error())
 					continue
 				}
-				util.SendMessageQuick(inMsg.Chat.ID, "Roger. Please restart the daemon manually.", botState.Bot)
+				util.SendMessageQuick(inMsg.Chat.ID, "Roger. This bot will shutdown soon.", botState.Bot)
+				os.Exit(0)
 			case "clear":
 				for _, session := range botState.SessionMap {
 					session.ChatRecords = make([]ChatRecord, 0, 16)
