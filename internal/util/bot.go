@@ -5,6 +5,8 @@ import (
 	"io"
 	"log/slog"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -107,12 +109,20 @@ func EditMessageMarkdown(chatID int64, messageID int, content string, bot *botap
 	editMsg.ParseMode = botapi.ModeMarkdownV2
 	_, err := bot.Send(editMsg)
 	if err != nil {
-		slog.Error(err.Error())
+		errMsg := err.Error()
+		slog.Error(errMsg)
 
-		if apiErr, ok := err.(botapi.Error); ok && apiErr.Code == ErrTooManyRequests {
-			retryAfter := apiErr.ResponseParameters.RetryAfter
-			time.Sleep(time.Duration(retryAfter+1) * time.Second)
-			EditMessageMarkdown(chatID, messageID, content, bot, useTelegramify)
+		// errMsg = ERROR Too Many Requests: retry after <int>
+		if strings.Contains(errMsg, "Too Many Requests") {
+			re := regexp.MustCompile(`retry after (\d+)`)
+			matches := re.FindStringSubmatch(errMsg)
+			if len(matches) > 1 {
+				retryAfter, errConv := strconv.Atoi(matches[1])
+				if errConv == nil {
+					time.Sleep(time.Duration(retryAfter+1) * time.Second)
+					EditMessageMarkdown(chatID, messageID, content, bot, useTelegramify)
+				}
+			}
 			return
 		}
 
