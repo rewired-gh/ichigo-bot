@@ -319,7 +319,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 						wrapMessage(false, leftContent, session),
 						botState.Bot, botState.Config.UseTelegramify)
 					outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID,
-						wrapMessage(false, rightContent, session),
+						wrapMessage(true, rightContent, session),
 						botState.Bot, botState.Config.UseTelegramify)
 					if err != nil {
 						slog.Error(err.Error())
