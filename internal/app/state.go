@@ -54,7 +54,7 @@ func NewState(config *util.Config) (state *State) {
 		CachedProviderMap: make(map[string]*openai.Client),
 		CachedModelMap:    make(map[string]*util.Model),
 		SessionMap:        make(map[int64]*Session),
-		EditThrottler:     util.NewThrottler(1),
+		EditThrottler:     util.NewThrottler(3),
 	}
 
 	for _, provider := range config.Providers {

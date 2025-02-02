@@ -248,6 +248,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 
 	defer stream.Close()
 
+	lastEditLen := len(responseContent)
 	for {
 		select {
 		case <-stopChan:
@@ -273,12 +274,16 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session,
 			}
 
 			responseContent += response.Choices[0].Delta.Content
-			select {
-			case <-botState.EditThrottler:
-				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
-					wrapMessage(true, responseContent, session),
-					botState.Bot, botState.Config.UseTelegramify)
-			default:
+			currentEditLen := len(responseContent)
+			if currentEditLen-lastEditLen >= 16 {
+				select {
+				case <-botState.EditThrottler:
+					lastEditLen = currentEditLen
+					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+						wrapMessage(true, responseContent, session),
+						botState.Bot, botState.Config.UseTelegramify)
+				default:
+				}
 			}
 		}
 	}
