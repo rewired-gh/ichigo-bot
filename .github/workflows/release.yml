@@ -62,11 +62,11 @@ jobs:
           tar -czvf target/ichigod_darwin_amd64.tar.gz -C target ichigod_darwin_amd64
           tar -czvf target/ichigod_darwin_arm64.tar.gz -C target ichigod_darwin_arm64
           tar -czvf target/ichigod_windows_amd64.exe.tar.gz -C target ichigod_windows_amd64.exe
-          echo "::set-output name=linux_amd64::$(pwd)/target/ichigod_linux_amd64.tar.gz"
-          echo "::set-output name=linux_arm64::$(pwd)/target/ichigod_linux_arm64.tar.gz"
-          echo "::set-output name=darwin_amd64::$(pwd)/target/ichigod_darwin_amd64.tar.gz"
-          echo "::set-output name=darwin_arm64::$(pwd)/target/ichigod_darwin_arm64.tar.gz"
-          echo "::set-output name=windows_amd64::$(pwd)/target/ichigod_windows_amd64.exe.tar.gz"
+          echo "linux_amd64=$(pwd)/target/ichigod_linux_amd64.tar.gz" >> $GITHUB_OUTPUT
+          echo "linux_arm64=$(pwd)/target/ichigod_linux_arm64.tar.gz" >> $GITHUB_OUTPUT
+          echo "darwin_amd64=$(pwd)/target/ichigod_darwin_amd64.tar.gz" >> $GITHUB_OUTPUT
+          echo "darwin_arm64=$(pwd)/target/ichigod_darwin_arm64.tar.gz" >> $GITHUB_OUTPUT
+          echo "windows_amd64=$(pwd)/target/ichigod_windows_amd64.exe.tar.gz" >> $GITHUB_OUTPUT
 
   create_release:
     permissions:
