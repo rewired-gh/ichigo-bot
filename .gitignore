@@ -79,6 +79,7 @@ Temporary Items
 
 target/
 tmp/
+vendor/
 .venv/
 *.env
 __debug*

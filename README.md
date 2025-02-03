@@ -13,6 +13,35 @@ A delightful Telegram bot powered by OpenAI-compatible APIs for fun and friendly
 - 📝 Beautiful Telegram Markdown V2 formatting
 - 🪶 Light as a feather on your server
 
+## 🐳 Quick Docker Deployment (beta)
+
+1. Create a configuration file `config.toml` in a local directory. **Assume** your local directory is `/path/to/data`. Please refer to `asset/example_config.toml` for an example configuration.
+
+2. Run the Docker container:
+```bash
+docker run -d \
+  --name ichigod \
+  -v /path/to/data:/etc/ichigod \
+  -e ICHIGOD_DATA_DIR=/etc/ichigod \
+  --restart unless-stopped \
+  dockerrewired/ichigo-bot:latest
+```
+
+3. Manage the Docker container:
+```bash
+# Stop the container
+docker stop ichigod
+
+# Start the container
+docker start ichigod
+
+# Restart the container
+docker restart ichigod
+
+# Remove the container
+docker rm ichigod
+```
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -40,44 +69,13 @@ sudo chmod a+rx /project_root/target/ichigod
 sudo cp -f /project_root/target/ichigod /usr/bin/ichigod
 ```
 
-2. Create data directory at `/etc/ichigod`:
+2. Create a data directory at `/etc/ichigod`:
 ```bash
 # Example commands
 sudo mkdir -p /etc/ichigod
 ```
 
-3. Create a configuration file `config.toml` in `/etc/ichigod`:
-```toml
-# Example configuration
-token = "YOUR_TELEGRAM_BOT_TOKEN"
-admins = [123456789]  # Your Telegram user ID
-users = []  # Allowed user IDs
-groups = []  # Allowed group chat IDs
-default_model = "o3m" # Alias of the default model
-max_tokens_per_response = 4000
-max_chat_records_per_user = 32
-use_telegramify = true # telegramify-markdown must be installed
-debug = false
-
-[[providers]]
-name = "openai"
-base_url = "https://api.openai.com/v1"
-api_key = "YOUR_OPENAI_API_KEY"
-
-[[models]]
-alias = "o3m"
-name = "o3-mini"
-provider = "openai"
-stream = false # o3-mini doesn't support streaming response
-system_prompt = false # o3-mini doesn't support system prompt
-
-[[models]]
-alias = "4o"
-name = "4o"
-provider = "openai"
-stream = true
-system_prompt = true
-```
+3. Create a configuration file `config.toml` in `/etc/ichigod`. Please refer to `asset/example_config.toml` for an example configuration.
 
 4. Create a Python virtual environment with `telegramify-markdown` installed in `/etc/ichigod/venv`:
 ```bash

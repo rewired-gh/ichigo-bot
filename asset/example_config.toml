@@ -1,0 +1,29 @@
+# Example configuration
+token = "YOUR_TELEGRAM_BOT_TOKEN"
+admins = [123456789]  # Your Telegram user ID
+users = []  # Allowed user IDs
+groups = []  # Allowed group chat IDs
+default_model = "o3m" # Alias of the default model
+max_tokens_per_response = 4000
+max_chat_records_per_user = 32
+use_telegramify = true # telegramify-markdown must be installed
+debug = false
+
+[[providers]]
+name = "openai"
+base_url = "https://api.openai.com/v1"
+api_key = "YOUR_OPENAI_API_KEY"
+
+[[models]]
+alias = "o3m"
+name = "o3-mini"
+provider = "openai"
+stream = false # o3-mini doesn't support streaming response
+system_prompt = false # o3-mini doesn't support system prompt
+
+[[models]]
+alias = "4o"
+name = "4o"
+provider = "openai"
+stream = true
+system_prompt = true
