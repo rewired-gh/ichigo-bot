@@ -2,7 +2,7 @@
 
 [![Build and Release](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml/badge.svg)](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml)
 
-一个由 OpenAI 兼容 API 驱动的令人愉悦的 Telegram 机器人，用于有趣友好的聊天互动！🌟
+令人愉悦的 Telegram AI 聊天机器人，用于聚合模型和 API 提供商。🌟
 
 ## ✨ 功能特性
 

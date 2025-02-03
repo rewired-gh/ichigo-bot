@@ -4,7 +4,7 @@
 
 [English](README.md) | [简体中文](asset/README_zh.md)
 
-A delightful Telegram bot powered by OpenAI-compatible APIs for fun and friendly chat interactions! 🌟
+A delightful Telegram AI chat bot powered for aggregating models and API providers. 🌟
 
 ## ✨ Features
 
