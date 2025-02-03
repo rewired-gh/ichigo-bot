@@ -166,13 +166,49 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 	defer func() {
 		session.ResponseChannel <- responseContent
 	}()
+
+	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session), botState.Bot, botState.Config.UseTelegramify)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
 	resp, err := client.CreateChatCompletion(context.Background(), req)
 	if err != nil {
 		slog.Error(err.Error())
 		return
 	}
 	responseContent = resp.Choices[0].Message.Content
-	sendLongMessage(botState, inMsg, session, responseContent, false)
+
+	if len(responseContent) > util.MessageCharacterLimit {
+		leftContent := responseContent[:util.MessageCharacterLimit]
+		rightContent := responseContent[util.MessageCharacterLimit:]
+		util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+			wrapMessage(false, leftContent, session),
+			botState.Bot, botState.Config.UseTelegramify)
+
+		for len(rightContent) > 0 {
+			var chunk string
+			if len(rightContent) > util.MessageCharacterLimit {
+				chunk = rightContent[:util.MessageCharacterLimit]
+				rightContent = rightContent[util.MessageCharacterLimit:]
+			} else {
+				chunk = rightContent
+				rightContent = ""
+			}
+			outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID,
+				wrapMessage(false, chunk, session),
+				botState.Bot, botState.Config.UseTelegramify)
+			if err != nil {
+				slog.Error(err.Error())
+				return
+			}
+		}
+	} else {
+		util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID,
+			wrapMessage(false, responseContent, session),
+			botState.Bot, botState.Config.UseTelegramify)
+	}
 }
 
 func processStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
@@ -186,6 +222,13 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 		session.ResponseChannel <- responseContent
 	}()
 
+	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, responseContent, session), botState.Bot, botState.Config.UseTelegramify)
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+	lastEditLen := 0
+
 	stream, err := client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
 		slog.Error("failed to create completion stream",
@@ -194,13 +237,6 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 		return
 	}
 	defer stream.Close()
-
-	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, "", session), botState.Bot, botState.Config.UseTelegramify)
-	if err != nil {
-		slog.Error(err.Error())
-		return
-	}
-	lastEditLen := 0
 
 	for {
 		select {
@@ -259,38 +295,4 @@ func wrapMessage(isResponding bool, content string, session *Session) string {
 		banner = fmt.Sprintf("🤗 *%s*\n\n", session.Model)
 	}
 	return banner + content
-}
-
-// sendLongMessage breaks content into chunks if it exceeds the Telegram message limit.
-func sendLongMessage(botState *State, inMsg *botapi.Message, session *Session, content string, isStreaming bool) {
-	if len(content) > util.MessageCharacterLimit {
-		firstChunk := content[:util.MessageCharacterLimit]
-		remaining := content[util.MessageCharacterLimit:]
-		if !isStreaming {
-			util.EditMessageMarkdown(inMsg.Chat.ID, inMsg.MessageID, wrapMessage(false, firstChunk, session), botState.Bot, botState.Config.UseTelegramify)
-		} else {
-			_, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(false, firstChunk, session), botState.Bot, botState.Config.UseTelegramify)
-			if err != nil {
-				slog.Error(err.Error())
-				return
-			}
-		}
-		for len(remaining) > 0 {
-			var chunk string
-			if len(remaining) > util.MessageCharacterLimit {
-				chunk = remaining[:util.MessageCharacterLimit]
-				remaining = remaining[util.MessageCharacterLimit:]
-			} else {
-				chunk = remaining
-				remaining = ""
-			}
-			_, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(false, chunk, session), botState.Bot, botState.Config.UseTelegramify)
-			if err != nil {
-				slog.Error(err.Error())
-				return
-			}
-		}
-	} else {
-		util.EditMessageMarkdown(inMsg.Chat.ID, inMsg.MessageID, wrapMessage(false, content, session), botState.Bot, botState.Config.UseTelegramify)
-	}
 }
