@@ -1,0 +1,62 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types:
+      - created
+
+jobs:
+  docker_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: dockerrewired/ichigo-bot:latest
+
+  multi_platform_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23.5'
+
+      - name: Build all platforms
+        run: make build_all
+
+      - name: Create release archives
+        run: |
+          cd target
+          for f in ichigod_*; do
+            tar czf "$f.tar.gz" "$f"
+          done
+
+      - name: Upload release artifacts
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/ichigod_*.tar.gz
