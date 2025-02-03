@@ -169,6 +169,7 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 	}
 	responseContent := resp.Choices[0].Message.Content
 	sendLongMessage(botState, inMsg, session, responseContent, false)
+	session.ResponseChannel <- responseContent
 }
 
 func processStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
@@ -186,6 +187,9 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 	defer stream.Close()
 
 	var responseContent, currentContent string
+	defer func() {
+		session.ResponseChannel <- responseContent
+	}()
 	outMsg, err := util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, "", session), botState.Bot, botState.Config.UseTelegramify)
 	if err != nil {
 		slog.Error(err.Error())
