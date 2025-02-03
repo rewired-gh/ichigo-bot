@@ -15,15 +15,17 @@ import (
 
 // StartBotService initializes the bot state and update loop.
 func StartBotService(config *util.Config) {
+	slog.Info("initializing bot service")
 	botState := NewState(config)
 	bot, err := botapi.NewBotAPI(config.Token)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error("failed to create bot API client", "error", err)
 		return
 	}
 
 	botState.Bot = bot
 	botState.Bot.Debug = config.Debug
+	slog.Info("bot API client initialized", "username", bot.Self.UserName, "debug_mode", config.Debug)
 	u := botapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := botState.Bot.GetUpdatesChan(u)
@@ -38,9 +40,15 @@ func StartBotService(config *util.Config) {
 func processUpdate(botState *State, update botapi.Update) {
 	inMsg := update.Message
 	if inMsg == nil {
-		slog.Warn("Nil message")
+		slog.Debug("skipping update with nil message", "update_id", update.UpdateID)
 		return
 	}
+
+	slog.Debug("processing update",
+		"update_id", update.UpdateID,
+		"user_id", inMsg.From.ID,
+		"chat_id", inMsg.Chat.ID,
+		"is_command", inMsg.IsCommand())
 
 	// Get user session via user id, fall back to chat id.
 	session, exists := botState.SessionMap[inMsg.From.ID]
@@ -48,7 +56,10 @@ func processUpdate(botState *State, update botapi.Update) {
 		chat := update.FromChat()
 		session, exists = botState.SessionMap[chat.ID]
 		if !exists {
-			slog.Warn("Session not found", "userID", inMsg.From.ID, "chatID", chat.ID)
+			slog.Warn("unauthorized access attempt",
+				"user_id", inMsg.From.ID,
+				"chat_id", chat.ID,
+				"username", inMsg.From.UserName)
 			return
 		}
 	}
@@ -91,9 +102,14 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 
 // handleResponse builds the OpenAI request and processes responses (streaming or non-streaming).
 func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
+	slog.Debug("preparing AI response",
+		"user_id", inMsg.From.ID,
+		"model", session.Model,
+		"records", len(session.ChatRecords))
+
 	model, ok := botState.CachedModelMap[session.Model]
 	if !ok {
-		slog.Error("Model not found", "model", session.Model)
+		slog.Error("model not configured", "model", session.Model)
 		return
 	}
 	client, ok := botState.CachedProviderMap[model.Provider]
@@ -125,6 +141,12 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		openaiMsgs = append(openaiMsgs, record.ToOpenAIChatMessage())
 	}
 
+	slog.Debug("sending request to AI provider",
+		"provider", model.Provider,
+		"model_name", model.Name,
+		"messages", len(openaiMsgs),
+		"streaming", model.Stream)
+
 	req := openai.ChatCompletionRequest{
 		Messages:            openaiMsgs,
 		Model:               model.Name,
@@ -150,9 +172,15 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 }
 
 func processStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
+	slog.Debug("starting streaming response",
+		"user_id", inMsg.From.ID,
+		"chat_id", inMsg.Chat.ID)
+
 	stream, err := client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error("failed to create completion stream",
+			"error", err,
+			"model", req.Model)
 		return
 	}
 	defer stream.Close()
@@ -168,6 +196,8 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 	for {
 		select {
 		case <-session.StopChannel:
+			slog.Info("response generation stopped by user",
+				"user_id", inMsg.From.ID)
 			return
 		default:
 			resp, err := stream.Recv()

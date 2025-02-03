@@ -1,6 +1,7 @@
 package util
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/spf13/viper"
@@ -45,6 +46,7 @@ func GetDataDir() string {
 
 func LoadConfig() (config Config, err error) {
 	dataDir := GetDataDir()
+	slog.Debug("loading configuration", "data_dir", dataDir)
 
 	viper.SetConfigName(ConfigName)
 	viper.SetConfigType(ConfigType)
@@ -55,9 +57,22 @@ func LoadConfig() (config Config, err error) {
 	viper.AddConfigPath("$HOME/.config/ichigod/")
 	viper.AddConfigPath(".")
 	if err = viper.ReadInConfig(); err != nil {
+		slog.Error("failed to read config file", "error", err)
 		return
 	}
 	err = viper.Unmarshal(&config)
+	if err != nil {
+		slog.Error("failed to unmarshal config", "error", err)
+		return
+	}
+
+	slog.Debug("configuration loaded",
+		"admins", len(config.Admins),
+		"users", len(config.Users),
+		"groups", len(config.Groups),
+		"providers", len(config.Providers),
+		"models", len(config.Models),
+		"default_model", config.DefaultModel)
 	return
 }
 

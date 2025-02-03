@@ -14,7 +14,13 @@ import (
 
 // handleCommand interprets incoming bot commands.
 func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
-	switch inMsg.Command() {
+	cmd := inMsg.Command()
+	slog.Info("processing command",
+		"command", cmd,
+		"user_id", inMsg.From.ID,
+		"args", inMsg.CommandArguments())
+
+	switch cmd {
 	case "chat":
 		handleChatAction(botState, inMsg, session)
 	case "new":
@@ -59,11 +65,16 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 
 // handleAdminCommand executes admin-only commands.
 func handleAdminCommand(botState *State, inMsg *botapi.Message) {
-	switch inMsg.Command() {
+	cmd := inMsg.Command()
+	slog.Info("processing admin command",
+		"command", cmd,
+		"user_id", inMsg.From.ID)
+
+	switch cmd {
 	case "get_config":
 		configString, err := toml.Marshal(botState.Config)
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error("failed to marshal config", "error", err)
 			return
 		}
 		util.SendMessageQuick(inMsg.Chat.ID, string(configString), botState.Bot)

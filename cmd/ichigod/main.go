@@ -8,16 +8,16 @@ import (
 )
 
 func main() {
+	slog.Info("starting ichigod")
 	config, err := util.LoadConfig()
 
-	slog.Info("Loaded config", "config", config)
-
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error("failed to load configuration", "error", err)
 		return
 	}
 
 	for {
 		app.StartBotService(&config)
+		slog.Warn("bot service terminated, restarting")
 	}
 }
