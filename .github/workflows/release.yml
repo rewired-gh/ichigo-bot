@@ -50,11 +50,13 @@ jobs:
           go-version: '1.23.5'
 
       - name: Build all platforms
+        working-directory: ${{ github.workspace }}
         run: |
           make build_all
-
+        
       - name: Create release archives
         id: create_archives
+        working-directory: ${{ github.workspace }}
         run: |
           mkdir -p target
           tar -czvf target/ichigod_linux_amd64.tar.gz -C target ichigod_linux_amd64
@@ -67,15 +69,6 @@ jobs:
           echo "darwin_amd64=$(pwd)/target/ichigod_darwin_amd64.tar.gz" >> $GITHUB_OUTPUT
           echo "darwin_arm64=$(pwd)/target/ichigod_darwin_arm64.tar.gz" >> $GITHUB_OUTPUT
           echo "windows_amd64=$(pwd)/target/ichigod_windows_amd64.exe.tar.gz" >> $GITHUB_OUTPUT
-
-  create_release:
-    permissions:
-        contents: write
-    needs: [multi_platform_release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
       - name: Create GitHub Release
         id: create_release
@@ -94,7 +87,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.multi_platform_release.outputs.linux_amd64 }}
+          asset_path: target/ichigod_linux_amd64.tar.gz
           asset_name: ichigod_linux_amd64.tar.gz
           asset_content_type: application/gzip
 
@@ -104,7 +97,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.multi_platform_release.outputs.linux_arm64 }}
+          asset_path: target/ichigod_linux_arm64.tar.gz
           asset_name: ichigod_linux_arm64.tar.gz
           asset_content_type: application/gzip
 
@@ -114,7 +107,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.multi_platform_release.outputs.darwin_amd64 }}
+          asset_path: target/ichigod_darwin_amd64.tar.gz
           asset_name: ichigod_darwin_amd64.tar.gz
           asset_content_type: application/gzip
 
@@ -124,7 +117,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.multi_platform_release.outputs.darwin_arm64 }}
+          asset_path: target/ichigod_darwin_arm64.tar.gz
           asset_name: ichigod_darwin_arm64.tar.gz
           asset_content_type: application/gzip
 
@@ -134,6 +127,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.multi_platform_release.outputs.windows_amd64 }}
+          asset_path: target/ichigod_windows_amd64.exe.tar.gz
           asset_name: ichigod_windows_amd64.exe.tar.gz
           asset_content_type: application/gzip
