@@ -19,7 +19,7 @@ A delightful Telegram bot powered by OpenAI-compatible APIs for fun and friendly
 
 ## 🐳 Quick Docker Deployment (beta)
 
-1. Create a configuration file `config.toml` in a local directory. **Assume** your local directory is `/path/to/data`. Please refer to `asset/example_config.toml` for an example configuration.
+1. Create a configuration file `config.toml` in a local directory. The configuration file's name must be `config.toml`, not any other name. **Assume** your local directory is `/path/to/data`. Please refer to [`asset/example_config.toml`](asset/example_config.toml) for an example configuration.
 
 2. Run the Docker container:
 ```bash
@@ -79,7 +79,7 @@ sudo cp -f /project_root/target/ichigod /usr/bin/ichigod
 sudo mkdir -p /etc/ichigod
 ```
 
-3. Create a configuration file `config.toml` in `/etc/ichigod`. Please refer to `asset/example_config.toml` for an example configuration.
+3. Create a configuration file `config.toml` in `/etc/ichigod`. The configuration file's name must be `config.toml`, not any other name. Please refer to [`asset/example_config.toml`](asset/example_config.toml) for an example configuration.
 
 4. Create a Python virtual environment with `telegramify-markdown` installed in `/etc/ichigod/venv`:
 ```bash

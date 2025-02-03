@@ -17,7 +17,7 @@
 
 ## 🐳 快速 Docker 部署 (beta)
 
-1. 在本地目录中创建配置文件 `config.toml`。**假设**您的本地目录为 `/path/to/data`。请参考 `asset/example_config.toml` 获取配置示例。
+1. 在本地目录中创建配置文件 `config.toml`。配置文件的名字必须是 `config.toml`，而不是其他名字。**假设**您的本地目录为 `/path/to/data`。请参考 [`asset/example_config.toml`](asset/example_config.toml) 获取配置示例。
 
 2. 运行 Docker 容器：
 ```bash
@@ -77,7 +77,7 @@ sudo cp -f /project_root/target/ichigod /usr/bin/ichigod
 sudo mkdir -p /etc/ichigod
 ```
 
-3. 在 `/etc/ichigod` 中创建配置文件 `config.toml`。请参考 `asset/example_config.toml` 获取配置示例。
+3. 在 `/etc/ichigod` 中创建配置文件 `config.toml`。配置文件的名字必须是 `config.toml`，而不是其他名字。请参考 [`asset/example_config.toml`](asset/example_config.toml) 获取配置示例。
 
 4. 在 `/etc/ichigod/venv` 中创建安装了 `telegramify-markdown` 的 Python 虚拟环境：
 ```bash
