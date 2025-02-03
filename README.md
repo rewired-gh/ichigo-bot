@@ -6,6 +6,8 @@
 
 A delightful Telegram AI chat bot powered for aggregating models and API providers. 🌟
 
+If you're not sure where to start, check out [cheahjs/free-llm-api-resources](https://github.com/cheahjs/free-llm-api-resources) for a wealth of LLM API resources, and visit [Telegram Bots](https://core.telegram.org/bots#how-do-i-create-a-bot) for guidance on creating your own bot.
+
 ## ✨ Features
 
 - 🛡️ Production-ready with super-robust error handling

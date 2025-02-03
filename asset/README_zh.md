@@ -4,6 +4,8 @@
 
 令人愉悦的 Telegram AI 聊天机器人，用于聚合模型和 API 提供商。🌟
 
+如果你不知道从何开始，请访问 [cheahjs/free-llm-api-resources](https://github.com/cheahjs/free-llm-api-resources) 获取丰富的 LLM API 资源，并参考 [Telegram Bots](https://core.telegram.org/bots#how-do-i-create-a-bot) 来了解如何创建自己的机器人。
+
 ## ✨ 功能特性
 
 - 🛡️ 生产就绪，具有超强健的错误处理能力
