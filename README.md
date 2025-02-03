@@ -46,6 +46,20 @@ docker restart ichigod
 docker rm ichigod
 ```
 
+## 🎮 Commands
+
+- `/chat` - Chat with Ichigo (Can be omitted in private messages)
+- `/new` - Start a new conversation
+- `/set` - Switch to a different model
+- `/list` - Show available models
+- `/undo` - Remove last conversation round
+- `/stop` - Stop the current response
+
+Admin Commands:
+- `/get_config` - View current configuration
+- `/set_config` - Update configuration and shutdown
+- `/clear` - Clear data
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -128,20 +142,6 @@ sudo journalctl -u ichigod.service | tail -8
 # <redacted> ichigod[202711]: <redacted> INFO initializing bot service
 # <redacted> ichigod[202711]: <redacted> INFO bot API client initialized username=<redacted> debug_mode=false
 ```
-
-## 🎮 Commands
-
-- `/chat` - Chat with Ichigo (Can be omitted in private messages)
-- `/new` - Start a new conversation
-- `/set` - Switch to a different model
-- `/list` - Show available models
-- `/undo` - Remove last conversation round
-- `/stop` - Stop the current response
-
-Admin Commands:
-- `/get_config` - View current configuration
-- `/set_config` - Update configuration and shutdown
-- `/clear` - Clear data
 
 ## 🛠️ Development
 
