@@ -8,12 +8,17 @@ import (
 )
 
 func main() {
+	slog.SetLogLoggerLevel(slog.LevelInfo)
 	slog.Info("starting ichigod")
 	config, err := util.LoadConfig()
 
 	if err != nil {
 		slog.Error("failed to load configuration", "error", err)
 		return
+	}
+
+	if config.Debug {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
 	for {
