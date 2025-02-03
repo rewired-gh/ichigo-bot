@@ -11,4 +11,4 @@ RUN chmod +x /usr/local/bin/ichigod
 
 ENV ICHIGOD_DATA_DIR=/etc/ichigod
 VOLUME /etc/ichigod
-CMD ["ichigod"]
+CMD ["sh", "-c", "while true; do ichigod; echo 'ichigod exited, restarting in 5 seconds'; sleep 5; done"]
