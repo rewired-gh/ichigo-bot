@@ -1,5 +1,9 @@
 # 🍓 Ichigo Bot
 
+[![Build and Release](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml/badge.svg)](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml)
+
+[English](README.md) | [简体中文](asset/README_zh.md)
+
 A delightful Telegram bot powered by OpenAI-compatible APIs for fun and friendly chat interactions! 🌟
 
 ## ✨ Features
