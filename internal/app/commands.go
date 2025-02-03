@@ -17,8 +17,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 	cmd := inMsg.Command()
 	slog.Info("processing command",
 		"command", cmd,
-		"user_id", inMsg.From.ID,
-		"args", inMsg.CommandArguments())
+		"user_id", inMsg.From.ID)
 
 	switch cmd {
 	case "chat":
