@@ -2,11 +2,10 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
   release:
-    types:
-      - created
+    types: [created]
 
 jobs:
   docker_build:
@@ -34,7 +33,15 @@ jobs:
           tags: dockerrewired/ichigo-bot:latest
 
   multi_platform_release:
+    permissions:
+        contents: write
     runs-on: ubuntu-latest
+    outputs:
+      linux_amd64: ${{ steps.create_archives.outputs.linux_amd64 }}
+      linux_arm64: ${{ steps.create_archives.outputs.linux_arm64 }}
+      darwin_amd64: ${{ steps.create_archives.outputs.darwin_amd64 }}
+      darwin_arm64: ${{ steps.create_archives.outputs.darwin_arm64 }}
+      windows_amd64: ${{ steps.create_archives.outputs.windows_amd64 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -45,18 +52,90 @@ jobs:
           go-version: '1.23.5'
 
       - name: Build all platforms
-        run: make build_all
+        run: |
+          make build_all
 
       - name: Create release archives
+        id: create_archives
         run: |
-          cd target
-          for f in ichigod_*; do
-            tar czf "$f.tar.gz" "$f"
-          done
+          mkdir -p target
+          tar -czvf target/ichigod_linux_amd64.tar.gz -C target ichigod_linux_amd64
+          tar -czvf target/ichigod_linux_arm64.tar.gz -C target ichigod_linux_arm64
+          tar -czvf target/ichigod_darwin_amd64.tar.gz -C target ichigod_darwin_amd64
+          tar -czvf target/ichigod_darwin_arm64.tar.gz -C target ichigod_darwin_arm64
+          tar -czvf target/ichigod_windows_amd64.exe.tar.gz -C target ichigod_windows_amd64.exe
+          echo "::set-output name=linux_amd64::$(pwd)/target/ichigod_linux_amd64.tar.gz"
+          echo "::set-output name=linux_arm64::$(pwd)/target/ichigod_linux_arm64.tar.gz"
+          echo "::set-output name=darwin_amd64::$(pwd)/target/ichigod_darwin_amd64.tar.gz"
+          echo "::set-output name=darwin_arm64::$(pwd)/target/ichigod_darwin_arm64.tar.gz"
+          echo "::set-output name=windows_amd64::$(pwd)/target/ichigod_windows_amd64.exe.tar.gz"
 
-      - name: Upload release artifacts
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v1
+  create_release:
+    permissions:
+        contents: write
+    needs: [multi_platform_release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: |
-            target/ichigod_*.tar.gz
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AMD64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.multi_platform_release.outputs.linux_amd64 }}
+          asset_name: ichigod_linux_amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Linux ARM64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.multi_platform_release.outputs.linux_arm64 }}
+          asset_name: ichigod_linux_arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Darwin AMD64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.multi_platform_release.outputs.darwin_amd64 }}
+          asset_name: ichigod_darwin_amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Darwin ARM64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.multi_platform_release.outputs.darwin_arm64 }}
+          asset_name: ichigod_darwin_arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Windows AMD64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.multi_platform_release.outputs.windows_amd64 }}
+          asset_name: ichigod_windows_amd64.exe.tar.gz
+          asset_content_type: application/gzip
