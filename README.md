@@ -1,6 +1,6 @@
 # 🍓 Ichigo Bot
 
-[![Build and Release](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml/badge.svg)](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml)
+[![Build and Release](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml/badge.svg)](https://github.com/rewired-gh/ichigo-bot/actions/workflows/release.yml) [![GitHub Release (Latest)](https://img.shields.io/github/v/release/rewired-gh/ichigo-bot)](https://github.com/rewired-gh/ichigo-bot/releases/latest) [![Docker Pulls](https://img.shields.io/docker/pulls/dockerrewired/ichigo-bot)](https://hub.docker.com/r/dockerrewired/ichigo-bot)
 
 [English](README.md) | [简体中文](asset/README_zh.md)
 
