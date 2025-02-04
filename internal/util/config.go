@@ -26,6 +26,13 @@ type Model struct {
 	SystemPrompt bool
 }
 
+type Rejection struct {
+	ExceptSessions bool
+	Sessions       []int64
+	ExceptModels   bool
+	Models         []string
+}
+
 type Config struct {
 	Token                 string     // Telegram bot token
 	Admins                []int64    // list of Telegram user IDs
@@ -33,6 +40,7 @@ type Config struct {
 	Groups                []int64    // list of Telegram group IDs
 	Providers             []Provider // list of OpenAI API endpoint providers
 	Models                []Model
+	Blocklist             []Rejection
 	DefaultModel          string
 	MaxTokensPerResponse  int
 	MaxChatRecordsPerUser int

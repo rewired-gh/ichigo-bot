@@ -1,6 +1,7 @@
 package app
 
 import (
+	mapset "github.com/deckarep/golang-set/v2"
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rewired-gh/ichigo-bot/internal/util"
 	"github.com/sashabaranov/go-openai"
@@ -26,12 +27,18 @@ const (
 	StateResponding
 )
 
+type FlattenRejection struct {
+	Sessions mapset.Set[int64]
+	Models   mapset.Set[string]
+}
+
 type Session struct {
 	Model           string // model alias
 	ChatRecords     []ChatRecord
 	State           SessionState
 	StopChannel     chan struct{}
 	ResponseChannel chan string
+	AvailableModels mapset.Set[string]
 }
 
 type Response struct {
@@ -48,7 +55,7 @@ type State struct {
 	EditThrottler     chan struct{}
 }
 
-func NewState(config *util.Config) (state *State) {
+func New(config *util.Config) (state *State) {
 	state = &State{
 		Config:            config,
 		CachedProviderMap: make(map[string]*openai.Client),
@@ -63,18 +70,48 @@ func NewState(config *util.Config) (state *State) {
 		state.CachedProviderMap[provider.Name] = openai.NewClientWithConfig(clientConfig)
 	}
 
+	allModelsSet := mapset.NewSet[string]()
+	allUsers := append(append(config.Admins, config.Users...), config.Groups...)
+	allUsersSet := mapset.NewSet[int64](allUsers...)
 	for _, model := range config.Models {
 		state.CachedModelMap[model.Alias] = &model
+		allModelsSet.Add(model.Alias)
 	}
 
-	allUsers := append(append(config.Admins, config.Users...), config.Groups...)
+	rejections := make([]FlattenRejection, 0, len(config.Blocklist))
+	for _, configRejection := range config.Blocklist {
+		rejection := FlattenRejection{}
+		sessions := mapset.NewSet[int64](configRejection.Sessions...)
+		models := mapset.NewSet[string](configRejection.Models...)
+		if !configRejection.ExceptSessions {
+			rejection.Sessions = sessions
+		} else {
+			rejection.Sessions = allUsersSet.Difference(sessions)
+		}
+		if !configRejection.ExceptModels {
+			rejection.Models = models
+		} else {
+			rejection.Models = allModelsSet.Difference(models)
+		}
+		rejections = append(rejections, rejection)
+	}
+
 	for _, user := range allUsers {
-		state.SessionMap[user] = &Session{
+		session := &Session{
 			Model:           config.DefaultModel,
 			ChatRecords:     make([]ChatRecord, 0, 16),
 			State:           StateIdle,
 			StopChannel:     make(chan struct{}),
 			ResponseChannel: make(chan string),
+			AvailableModels: allModelsSet.Clone(),
+		}
+
+		state.SessionMap[user] = session
+
+		for _, rejection := range rejections {
+			if rejection.Sessions.Contains(user) {
+				session.AvailableModels = session.AvailableModels.Difference(rejection.Models)
+			}
 		}
 	}
 

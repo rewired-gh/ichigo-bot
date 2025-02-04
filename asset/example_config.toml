@@ -1,8 +1,8 @@
 # Example configuration
 Token = "YOUR_TELEGRAM_BOT_TOKEN"
-Admins = [123456789]  # Your Telegram user ID
-Users = []  # Allowed user IDs
-Groups = []  # Allowed group chat IDs
+Admins = [1234]  # Your Telegram user ID
+Users = [1, 22, 333]  # Allowed user IDs
+Groups = [-1, -22, -333]  # Allowed group chat IDs
 DefaultModel = "o3m" # Alias of the default model
 MaxTokensPerResponse = 4000
 MaxChatRecordsPerUser = 32
@@ -21,7 +21,7 @@ APIKey = "YOUR_OPENAI_API_KEY"
 
 [[Models]]
 Alias = "o3m"
-Name = "o3-mini"
+Name = "o3-mini" # Model name for API request
 Provider = "openai" # Refer to the provider defined above
 Stream = false # o3-mini doesn't support streaming response
 SystemPrompt = false # o3-mini doesn't support system prompt
@@ -39,3 +39,9 @@ Name = "4o"
 Provider = "gh"
 Stream = true
 SystemPrompt = true
+
+[[Blocklist]]
+ExceptSessions = true # If true, blocklist will be applied to all sessions except the listed ones
+Sessions = [1234, -333] # Applied user and group chat IDs
+ExceptModels = false # If true, blocklist will be applied to all models except the listed ones
+Models = ['4o-gh'] # Applied model aliases

@@ -16,7 +16,7 @@ import (
 // StartBotService initializes the bot state and update loop.
 func StartBotService(config *util.Config) {
 	slog.Info("initializing bot service")
-	botState := NewState(config)
+	botState := New(config)
 	bot, err := botapi.NewBotAPI(config.Token)
 	if err != nil {
 		slog.Error("failed to create bot API client", "error", err)

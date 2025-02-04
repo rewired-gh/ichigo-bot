@@ -32,11 +32,18 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 			slog.Warn("Model not found", "model", modelAlias)
 			return
 		}
+		if !session.AvailableModels.ContainsAny(modelAlias) {
+			slog.Warn("Model not available", "model", modelAlias, "user_id", inMsg.From.ID, "chat_id", inMsg.Chat.ID)
+			return
+		}
 		session.Model = modelAlias
-		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current Model: %s (%s) by %s", model.Name, modelAlias, model.Provider), botState.Bot)
+		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current model: %s (%s) by %s", model.Name, modelAlias, model.Provider), botState.Bot)
 	case "list":
-		var modelList string
+		modelList := "Available models:\n"
 		for alias, model := range botState.CachedModelMap {
+			if !session.AvailableModels.ContainsAny(alias) {
+				continue
+			}
 			modelList += fmt.Sprintf("%s: %s by %s\n", alias, model.Name, model.Provider)
 		}
 		util.SendMessageQuick(inMsg.Chat.ID, modelList, botState.Bot)
