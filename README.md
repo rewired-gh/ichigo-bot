@@ -21,31 +21,21 @@ If you're not sure where to start, check out [cheahjs/free-llm-api-resources](ht
 
 ## 🐳 Quick Docker Deployment (beta)
 
-1. Create a configuration file `config.toml` in a local directory. The configuration file's name must be `config.toml`, not any other name. **Assume** your local directory is `/path/to/data`. Please refer to [`asset/example_config.toml`](asset/example_config.toml) for an example configuration.
-
-2. Run the Docker container:
+1. Create a local data directory. **Assume** the data directory path is `/path/to/data`:
 ```bash
-docker run -d \
+mkdir -p /path/to/data
+```
+
+2. Create a configuration file `config.toml` in `/path/to/data`. The configuration file's name **must** be `config.toml`, not any other name. Please refer to [`asset/example_config.toml`](asset/example_config.toml) for an example configuration.
+
+3. Run the Docker container (replace `/path/to/data` with the real data directory path):
+```bash
+sudo docker run -d \
   --name ichigod \
   -v /path/to/data:/etc/ichigod \
   -e ICHIGOD_DATA_DIR=/etc/ichigod \
   --restart unless-stopped \
   dockerrewired/ichigo-bot:latest
-```
-
-3. Manage the Docker container:
-```bash
-# Stop the container
-docker stop ichigod
-
-# Start the container
-docker start ichigod
-
-# Restart the container
-docker restart ichigod
-
-# Remove the container
-docker rm ichigod
 ```
 
 ## 🎮 Commands

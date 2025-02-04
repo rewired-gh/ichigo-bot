@@ -19,31 +19,21 @@
 
 ## 🐳 快速 Docker 部署 (beta)
 
-1. 在本地目录中创建配置文件 `config.toml`。配置文件的名字必须是 `config.toml`，而不是其他名字。**假设**您的本地目录为 `/path/to/data`。请参考 [`asset/example_config.toml`](asset/example_config.toml) 获取配置示例。
-
-2. 运行 Docker 容器：
+1. 创建一个本地数据目录。**假设**这个数据目录路径为 `/path/to/data`：
 ```bash
-docker run -d \
+mkdir -p /path/to/data
+```
+
+2. 在 `/path/to/data` 中创建配置文件 `config.toml`。配置文件的名字**必须**是 `config.toml`，而不是其他名字。请参考 [`asset/example_config.toml`](asset/example_config.toml) 获取配置示例。
+
+3. 运行 Docker 容器（替换 `/path/to/data` 为真正的数据目录路径）：
+```bash
+sudo docker run -d \
   --name ichigod \
   -v /path/to/data:/etc/ichigod \
   -e ICHIGOD_DATA_DIR=/etc/ichigod \
   --restart unless-stopped \
   dockerrewired/ichigo-bot:latest
-```
-
-3. 管理 Docker 容器：
-```bash
-# 停止容器
-docker stop ichigod
-
-# 启动容器
-docker start ichigod
-
-# 重启容器
-docker restart ichigod
-
-# 移除容器
-docker rm ichigod
 ```
 
 ## 🎮 命令
