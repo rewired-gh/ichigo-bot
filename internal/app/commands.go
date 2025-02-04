@@ -24,6 +24,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		handleChatAction(botState, inMsg, session)
 	case "new":
 		session.ChatRecords = make([]ChatRecord, 0, 16)
+		tryStoppingResponse(session)
 		select {
 		case <-session.ResponseChannel:
 		default:
@@ -64,11 +65,8 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		}
 		util.SendMessageQuick(inMsg.Chat.ID, "Last round of conversation undone.", botState.Bot)
 	case "stop":
-		if session.State == StateResponding {
-			go func() { session.StopChannel <- struct{}{} }()
-			session.State = StateIdle
-		}
-		util.SendMessageQuick(inMsg.Chat.ID, "Try to stop the last response.", botState.Bot)
+		tryStoppingResponse(session)
+		util.SendMessageQuick(inMsg.Chat.ID, "Tried stopping the last response.", botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
 			handleAdminCommand(botState, inMsg)

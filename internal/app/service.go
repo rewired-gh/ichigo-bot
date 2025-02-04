@@ -302,3 +302,10 @@ func wrapMessage(isResponding bool, content string, session *Session) string {
 	}
 	return banner + content
 }
+
+func tryStoppingResponse(session *Session) {
+	if session.State == StateResponding {
+		go func() { session.StopChannel <- struct{}{} }()
+		session.State = StateIdle
+	}
+}
