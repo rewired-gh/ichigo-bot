@@ -24,6 +24,10 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		handleChatAction(botState, inMsg, session)
 	case "new":
 		session.ChatRecords = make([]ChatRecord, 0, 16)
+		select {
+		case <-session.ResponseChannel:
+		default:
+		}
 		util.SendMessageQuick(inMsg.Chat.ID, "New conversation started.", botState.Bot)
 	case "set":
 		modelAlias := inMsg.CommandArguments()
