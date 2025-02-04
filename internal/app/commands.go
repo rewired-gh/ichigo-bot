@@ -24,16 +24,18 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		handleChatAction(botState, inMsg, session)
 	case "new":
 		session.ChatRecords = make([]ChatRecord, 0, 16)
-		util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
+		util.SendMessageQuick(inMsg.Chat.ID, "New conversation started.", botState.Bot)
 	case "set":
 		modelAlias := inMsg.CommandArguments()
 		model, exists := botState.CachedModelMap[modelAlias]
 		if !exists {
-			slog.Warn("Model not found", "model", modelAlias)
+			slog.Warn("model not found", "model", modelAlias)
+			util.SendMessageQuick(inMsg.Chat.ID, "Model not found.", botState.Bot)
 			return
 		}
 		if !session.AvailableModels.ContainsAny(modelAlias) {
-			slog.Warn("Model not available", "model", modelAlias, "user_id", inMsg.From.ID, "chat_id", inMsg.Chat.ID)
+			slog.Warn("model not available", "model", modelAlias, "user_id", inMsg.From.ID, "chat_id", inMsg.Chat.ID)
+			util.SendMessageQuick(inMsg.Chat.ID, "Model not available.", botState.Bot)
 			return
 		}
 		session.Model = modelAlias
@@ -56,12 +58,13 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 				session.ChatRecords = session.ChatRecords[:len(session.ChatRecords)-1]
 			}
 		}
-		util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
+		util.SendMessageQuick(inMsg.Chat.ID, "Last round of conversation undone.", botState.Bot)
 	case "stop":
 		if session.State == StateResponding {
 			go func() { session.StopChannel <- struct{}{} }()
 			session.State = StateIdle
 		}
+		util.SendMessageQuick(inMsg.Chat.ID, "Try to stop the last response.", botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
 			handleAdminCommand(botState, inMsg)
@@ -81,6 +84,7 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 		configString, err := toml.Marshal(botState.Config)
 		if err != nil {
 			slog.Error("failed to marshal config", "error", err)
+			util.SendMessageQuick(inMsg.Chat.ID, "Failed to retrieve configuration.", botState.Bot)
 			return
 		}
 		util.SendMessageQuick(inMsg.Chat.ID, string(configString), botState.Bot)
@@ -90,6 +94,7 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 		err := toml.Unmarshal([]byte(configString), &config)
 		if err != nil {
 			slog.Error(err.Error())
+			util.SendMessageQuick(inMsg.Chat.ID, "Failed to update configuration.", botState.Bot)
 			return
 		}
 		botState.Config = &config
@@ -98,15 +103,16 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 		err = os.WriteFile(configPath, []byte(configString), 0644)
 		if err != nil {
 			slog.Error(err.Error())
+			util.SendMessageQuick(inMsg.Chat.ID, "Failed to update configuration.", botState.Bot)
 			return
 		}
-		util.SendMessageQuick(inMsg.Chat.ID, "Roger. This bot will shutdown soon.", botState.Bot)
+		util.SendMessageQuick(inMsg.Chat.ID, "Configuration updated. The bot will now shut down or restart.", botState.Bot)
 		os.Exit(0)
 	case "clear":
 		for _, sess := range botState.SessionMap {
 			sess.ChatRecords = make([]ChatRecord, 0, 16)
 		}
-		util.SendMessageQuick(inMsg.Chat.ID, "Roger.", botState.Bot)
+		util.SendMessageQuick(inMsg.Chat.ID, "All chat sessions have been reset.", botState.Bot)
 	}
 }
 

@@ -82,7 +82,8 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 	}
 
 	if session.State == StateResponding {
-		slog.Warn("Ignoring new message while responding", "userID", inMsg.From.ID)
+		slog.Warn("ignoring new message while responding", "userID", inMsg.From.ID)
+		util.SendMessageQuick(inMsg.Chat.ID, "Last response has not completed yet.", botState.Bot)
 		return
 	}
 
@@ -110,11 +111,13 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 	model, ok := botState.CachedModelMap[session.Model]
 	if !ok {
 		slog.Error("model not configured", "model", session.Model)
+		util.SendMessageQuick(inMsg.Chat.ID, "Model not configured.", botState.Bot)
 		return
 	}
 	client, ok := botState.CachedProviderMap[model.Provider]
 	if !ok {
-		slog.Error("Provider not found", "provider", model.Provider)
+		slog.Error("provider not found", "provider", model.Provider)
+		util.SendMessageQuick(inMsg.Chat.ID, "Provider not found.", botState.Bot)
 		return
 	}
 
@@ -176,6 +179,7 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 	resp, err := client.CreateChatCompletion(context.Background(), req)
 	if err != nil {
 		slog.Error(err.Error())
+		util.SendMessageQuick(inMsg.Chat.ID, "Failed to generate response.", botState.Bot)
 		return
 	}
 	responseContent = resp.Choices[0].Message.Content
@@ -234,6 +238,7 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 		slog.Error("failed to create completion stream",
 			"error", err,
 			"model", req.Model)
+		util.SendMessageQuick(inMsg.Chat.ID, "Failed to generate response.", botState.Bot)
 		return
 	}
 	defer stream.Close()
@@ -252,6 +257,7 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 			}
 			if err != nil {
 				slog.Error(err.Error())
+				util.SendMessageQuick(inMsg.Chat.ID, "Failed to generate response.", botState.Bot)
 				return
 			}
 			if len(resp.Choices) == 0 {
