@@ -1,6 +1,8 @@
 package app
 
 import (
+	"database/sql"
+
 	mapset "github.com/deckarep/golang-set/v2"
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rewired-gh/ichigo-bot/internal/util"
@@ -15,6 +17,7 @@ const (
 )
 
 type ChatRecord struct {
+	DBID    int // only used for DB operations
 	Role    ChatRole
 	Content string
 	// TODO: add more fields
@@ -33,6 +36,7 @@ type FlattenRejection struct {
 }
 
 type Session struct {
+	ID              int64
 	Model           string // model alias
 	ChatRecords     []ChatRecord
 	State           SessionState
@@ -54,6 +58,7 @@ type State struct {
 	SessionMap        map[int64]*Session        // map of user ID to session
 	Bot               *botapi.BotAPI            // nullable
 	EditThrottler     chan struct{}
+	DB                *sql.DB
 }
 
 func New(config *util.Config) (state *State) {
@@ -70,6 +75,9 @@ func New(config *util.Config) (state *State) {
 		clientConfig.BaseURL = provider.BaseURL
 		state.CachedProviderMap[provider.Name] = openai.NewClientWithConfig(clientConfig)
 	}
+
+	// Open (or create) the sqlite DB in the data directory.
+	state.DB = OpenSessionDB(util.GetDataDir())
 
 	allModelsSet := mapset.NewSet[string]()
 	allUsers := append(append(config.Admins, config.Users...), config.Groups...)
@@ -99,6 +107,7 @@ func New(config *util.Config) (state *State) {
 
 	for _, user := range allUsers {
 		session := &Session{
+			ID:              user,
 			Model:           config.DefaultModel,
 			ChatRecords:     make([]ChatRecord, 0, 16),
 			State:           StateIdle,
@@ -106,6 +115,17 @@ func New(config *util.Config) (state *State) {
 			ResponseChannel: make(chan string),
 			AvailableModels: allModelsSet.Clone(),
 			Temperature:     config.DefaultTemperature,
+		}
+
+		// Load persisted session (if any).
+		if stored, err := LoadSession(state.DB, user); err == nil {
+			if stored.Model != "" {
+				session.Model = stored.Model
+			}
+			session.Temperature = stored.Temperature
+			if len(stored.ChatRecords) > 0 {
+				session.ChatRecords = stored.ChatRecords
+			}
 		}
 
 		state.SessionMap[user] = session
@@ -116,7 +136,6 @@ func New(config *util.Config) (state *State) {
 			}
 		}
 	}
-
 	return
 }
 

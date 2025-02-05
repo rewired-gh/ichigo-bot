@@ -78,6 +78,7 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 	case content := <-session.ResponseChannel:
 		session.ChatRecords = append(session.ChatRecords, ChatRecord{Role: RoleBot, Content: content})
 		session.State = StateIdle
+		AppendChatRecord(botState.DB, session.ID, int(RoleBot), content)
 	default:
 	}
 
@@ -125,6 +126,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 	upperLimit := botState.Config.MaxChatRecordsPerUser - 2
 	if len(session.ChatRecords) > upperLimit {
 		session.ChatRecords = session.ChatRecords[len(session.ChatRecords)-upperLimit:]
+		TrimOldChatRecords(botState.DB, session.ID, upperLimit)
 	}
 
 	// Build request messages.

@@ -30,6 +30,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		case <-session.ResponseChannel:
 		default:
 		}
+		ClearChatRecords(botState.DB, session.ID)
 		util.SendMessageQuick(inMsg.Chat.ID, "New conversation started.", botState.Bot)
 	case "set":
 		modelAlias := inMsg.CommandArguments()
@@ -45,6 +46,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 			return
 		}
 		session.Model = modelAlias
+		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
 		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current model: %s (%s) by %s", model.Name, modelAlias, model.Provider), botState.Bot)
 	case "list":
 		modelList := "Available models:\n"
@@ -59,9 +61,11 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		if len(session.ChatRecords) > 0 {
 			if session.ChatRecords[len(session.ChatRecords)-1].Role == RoleBot {
 				session.ChatRecords = session.ChatRecords[:len(session.ChatRecords)-1]
+				DeleteLastChatRecord(botState.DB, session.ID)
 			}
 			if len(session.ChatRecords) > 0 && session.ChatRecords[len(session.ChatRecords)-1].Role == RoleUser {
 				session.ChatRecords = session.ChatRecords[:len(session.ChatRecords)-1]
+				DeleteLastChatRecord(botState.DB, session.ID)
 			}
 		}
 		util.SendMessageQuick(inMsg.Chat.ID, "Last round of conversation undone.", botState.Bot)
@@ -77,6 +81,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 			return
 		}
 		session.Temperature = float32(temp)
+		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
 		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current temperature: %.2f.", temp), botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
@@ -122,10 +127,14 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 		util.SendMessageQuick(inMsg.Chat.ID, "Configuration updated. The bot will now shut down or restart.", botState.Bot)
 		os.Exit(0)
 	case "clear":
-		for _, sess := range botState.SessionMap {
-			sess.ChatRecords = make([]ChatRecord, 0, 16)
+		for _, session := range botState.SessionMap {
+			session.ChatRecords = make([]ChatRecord, 0, 16)
+			session.Temperature = botState.Config.DefaultTemperature
+			session.Model = botState.Config.DefaultModel
+			UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
 		}
-		util.SendMessageQuick(inMsg.Chat.ID, "All chat sessions have been reset.", botState.Bot)
+		ClearAllChatRecords(botState.DB)
+		util.SendMessageQuick(inMsg.Chat.ID, "All session data has been reset.", botState.Bot)
 	}
 }
 
