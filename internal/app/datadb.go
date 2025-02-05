@@ -7,7 +7,7 @@ import (
 
 	"log/slog"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 const (
@@ -22,7 +22,9 @@ func OpenSessionDB(dataDir string) *sql.DB {
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		slog.Error("failed to create data directory", "error", err)
 	}
-	db, err := sql.Open("sqlite3", dbPath)
+	// Updated DSN for modernc.org/sqlite driver.
+	dsn := "file:" + dbPath + "?mode=rwc"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		slog.Error("failed to open session DB", "error", err)
 		return nil
@@ -93,7 +95,7 @@ func LoadSession(db *sql.DB, sessionID int64) (StoredSession, error) {
 	var ss StoredSession
 	row := db.QueryRow("SELECT model, temperature FROM sessions WHERE session_id = ?", sessionID)
 	err := row.Scan(&ss.Model, &ss.Temperature)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return ss, err
 	}
 	rows, err := db.Query("SELECT id, role, content FROM chat_records WHERE session_id = ? ORDER BY id ASC", sessionID)

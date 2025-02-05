@@ -97,6 +97,7 @@ func handleChatAction(botState *State, inMsg *botapi.Message, session *Session) 
 	// Append this user message to the session.
 	session.ChatRecords = append(session.ChatRecords, ChatRecord{Role: RoleUser, Content: inMsg.Text})
 	session.State = StateResponding
+	AppendChatRecord(botState.DB, session.ID, int(RoleUser), inMsg.Text)
 
 	// Handle the response asynchronously.
 	go handleResponse(botState, inMsg, session)

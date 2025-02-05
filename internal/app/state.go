@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"log/slog"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -118,14 +119,21 @@ func New(config *util.Config) (state *State) {
 		}
 
 		// Load persisted session (if any).
-		if stored, err := LoadSession(state.DB, user); err == nil {
-			if stored.Model != "" {
+		stored, err := LoadSession(state.DB, user)
+		if err == nil {
+			if _, ok := state.CachedModelMap[stored.Model]; ok {
 				session.Model = stored.Model
 			}
 			session.Temperature = stored.Temperature
 			if len(stored.ChatRecords) > 0 {
 				session.ChatRecords = stored.ChatRecords
 			}
+		} else if err == sql.ErrNoRows {
+			// No session in DB: create session row with default values.
+			slog.Warn("no session found in DB", "user_id", user)
+			UpdateSessionMetadata(state.DB, user, session.Model, session.Temperature)
+		} else {
+			slog.Error("failed to load session", "user_id", user, "error", err)
 		}
 
 		state.SessionMap[user] = session
