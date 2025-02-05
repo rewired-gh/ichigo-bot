@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"log/slog"
 
@@ -67,6 +68,16 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 	case "stop":
 		tryStoppingResponse(session)
 		util.SendMessageQuick(inMsg.Chat.ID, "Tried stopping the last response.", botState.Bot)
+	case "set_temp":
+		tempStr := inMsg.CommandArguments()
+		temp, err := strconv.ParseFloat(tempStr, 32)
+		if err != nil {
+			slog.Warn("failed to parse temperature", "error", err)
+			util.SendMessageQuick(inMsg.Chat.ID, "Failed to set temperature.", botState.Bot)
+			return
+		}
+		session.Temperature = float32(temp)
+		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current temperature: %.2f.", temp), botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
 			handleAdminCommand(botState, inMsg)

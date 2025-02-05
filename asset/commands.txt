@@ -4,6 +4,7 @@ set - Switch to a different model
 list - Show available models
 undo - Remove last conversation round
 stop - Stop the current response
+set_temp - Set text completion temperature
 get_config - (Admin only) View current configuration
 set_config - (Admin only) Update configuration and shutdown
 clear - (Admin only) Clear data

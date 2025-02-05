@@ -42,6 +42,7 @@ type Config struct {
 	Models                []Model
 	Blocklist             []Rejection
 	DefaultModel          string
+	DefaultTemperature    float32
 	MaxTokensPerResponse  int
 	MaxChatRecordsPerUser int
 	UseTelegramify        bool
@@ -80,7 +81,8 @@ func LoadConfig() (config Config, err error) {
 		"groups", len(config.Groups),
 		"providers", len(config.Providers),
 		"models", len(config.Models),
-		"default_model", config.DefaultModel)
+		"default_model", config.DefaultModel,
+		"default_temperature", config.DefaultTemperature)
 	return
 }
 

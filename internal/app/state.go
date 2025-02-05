@@ -39,6 +39,7 @@ type Session struct {
 	StopChannel     chan struct{}
 	ResponseChannel chan string
 	AvailableModels mapset.Set[string]
+	Temperature     float32
 }
 
 type Response struct {
@@ -104,6 +105,7 @@ func New(config *util.Config) (state *State) {
 			StopChannel:     make(chan struct{}),
 			ResponseChannel: make(chan string),
 			AvailableModels: allModelsSet.Clone(),
+			Temperature:     config.DefaultTemperature,
 		}
 
 		state.SessionMap[user] = session

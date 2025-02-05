@@ -131,7 +131,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 	var openaiMsgs []openai.ChatCompletionMessage
 	systemRole := openai.ChatMessageRoleSystem
 	if !model.SystemPrompt {
-		systemRole = openai.ChatMessageRoleUser
+		systemRole = util.ChatMessageRoleDeveloper
 	}
 	openaiMsgs = append(openaiMsgs, openai.ChatCompletionMessage{
 		Role:    systemRole,
@@ -155,6 +155,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		Model:               model.Name,
 		MaxCompletionTokens: botState.Config.MaxTokensPerResponse,
 		Stream:              model.Stream,
+		Temperature:         session.Temperature,
 	}
 
 	if !model.Stream {
@@ -165,6 +166,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 }
 
 func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
+	req.Stream = false
 	responseContent := ""
 	defer func() {
 		session.ResponseChannel <- responseContent
@@ -216,6 +218,7 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 }
 
 func processStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
+	req.Stream = true
 	slog.Debug("starting streaming response",
 		"user_id", inMsg.From.ID,
 		"chat_id", inMsg.Chat.ID)
@@ -296,9 +299,9 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 func wrapMessage(isResponding bool, content string, session *Session) string {
 	var banner string
 	if isResponding {
-		banner = fmt.Sprintf("💭 *%s*\n\n", session.Model)
+		banner = fmt.Sprintf("💭 *%s* (t: %.2f)\n\n", session.Model, session.Temperature)
 	} else {
-		banner = fmt.Sprintf("🤗 *%s*\n\n", session.Model)
+		banner = fmt.Sprintf("🤗 *%s* (t: %.2f)\n\n", session.Model, session.Temperature)
 	}
 	return banner + content
 }

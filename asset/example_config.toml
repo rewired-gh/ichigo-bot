@@ -4,6 +4,7 @@ Admins = [1234]  # Your Telegram user ID
 Users = [1, 22, 333]  # Allowed user IDs
 Groups = [-1, -22, -333]  # Allowed group chat IDs
 DefaultModel = "o3m" # Alias of the default model
+DefaultTemperature = 0.2 # Default temperature for text completion
 MaxTokensPerResponse = 4000
 MaxChatRecordsPerUser = 32
 UseTelegramify = true # telegramify-markdown must be installed

@@ -44,6 +44,7 @@ sudo docker run -d \
 - `/list` - 显示可用模型
 - `/undo` - 移除最后一轮对话
 - `/stop` - 停止当前响应
+- `/set_temp` - 设置文本补全温度
 
 管理命令：
 - `/get_config` - 查看当前配置

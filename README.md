@@ -46,6 +46,7 @@ sudo docker run -d \
 - `/list` - Show available models
 - `/undo` - Remove last conversation round
 - `/stop` - Stop the current response
+- `/set_temp` - Set text completion temperature
 
 Admin Commands:
 - `/get_config` - View current configuration
