@@ -11,7 +11,12 @@ import (
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/rewired-gh/ichigo-bot/internal/util"
+
+	_ "embed"
 )
+
+//go:embed commands.txt
+var helpTxt string
 
 // handleCommand interprets incoming bot commands.
 func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
@@ -83,6 +88,8 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 		session.Temperature = float32(temp)
 		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
 		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current temperature: %.2f.", temp), botState.Bot)
+	case "help":
+		util.SendMessageQuick(inMsg.Chat.ID, helpTxt, botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
 			handleAdminCommand(botState, inMsg)
@@ -131,10 +138,23 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 			session.ChatRecords = make([]ChatRecord, 0, 16)
 			session.Temperature = botState.Config.DefaultTemperature
 			session.Model = botState.Config.DefaultModel
-			UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
 		}
+		ClearAllMetadata(botState.DB)
 		ClearAllChatRecords(botState.DB)
 		util.SendMessageQuick(inMsg.Chat.ID, "All session data has been reset.", botState.Bot)
+	case "tidy":
+		// Gather valid session IDs from botState.SessionMap.
+		validIDs := make([]int64, 0, len(botState.SessionMap))
+		for sessID := range botState.SessionMap {
+			validIDs = append(validIDs, sessID)
+		}
+		deleted, err := TidyObsoleteSessions(botState.DB, validIDs)
+		if err != nil {
+			slog.Error("tidy failed", "error", err)
+			util.SendMessageQuick(inMsg.Chat.ID, "Failed to tidy sessions.", botState.Bot)
+			return
+		}
+		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Tidy complete. Deleted %d obsolete session(s).", deleted), botState.Bot)
 	}
 }
 

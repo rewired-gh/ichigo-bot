@@ -45,11 +45,13 @@ sudo docker run -d \
 - `/undo` - 移除最后一轮对话
 - `/stop` - 停止当前响应
 - `/set_temp` - 设置文本补全温度
+- `/help` - 获取命令列表
 
 管理命令：
 - `/get_config` - 查看当前配置
 - `/set_config` - 更新配置并关闭
 - `/clear` - 清除数据
+- `/tidy` - 自动删除不存在的会话及聊天记录
 
 ## 🚀 快速开始
 

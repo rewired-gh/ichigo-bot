@@ -47,11 +47,13 @@ sudo docker run -d \
 - `/undo` - Remove last conversation round
 - `/stop` - Stop the current response
 - `/set_temp` - Set text completion temperature
+- `/help` - Get the list of commands
 
 Admin Commands:
 - `/get_config` - View current configuration
 - `/set_config` - Update configuration and shutdown
 - `/clear` - Clear data
+- `/tidy` - Auto delete sessions and chat records whose IDs no longer exist
 
 ## 🚀 Quick Start
 

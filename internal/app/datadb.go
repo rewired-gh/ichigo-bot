@@ -62,6 +62,13 @@ func UpdateSessionMetadata(db *sql.DB, sessionID int64, model string, temperatur
 	}
 }
 
+func ClearAllMetadata(db *sql.DB) {
+	stmt := `DELETE FROM sessions;`
+	if _, err := db.Exec(stmt); err != nil {
+		slog.Error("failed to clear all metadata", "error", err)
+	}
+}
+
 func AppendChatRecord(db *sql.DB, sessionID int64, role int, content string) {
 	stmt := `
 	INSERT INTO chat_records(session_id, role, content)
@@ -144,4 +151,41 @@ func TrimOldChatRecords(db *sql.DB, sessionID int64, keepCount int) {
 	if _, err := db.Exec(stmt, sessionID, sessionID, keepCount); err != nil {
 		slog.Error("failed to trim chat records", "sessionID", sessionID, "error", err)
 	}
+}
+
+func TidyObsoleteSessions(db *sql.DB, validIDs []int64) (int, error) {
+	// If no valid IDs, delete all sessions and chat records.
+	if len(validIDs) == 0 {
+		if _, err := db.Exec("DELETE FROM chat_records"); err != nil {
+			return 0, err
+		}
+		res, err := db.Exec("DELETE FROM sessions")
+		if err != nil {
+			return 0, err
+		}
+		affected, _ := res.RowsAffected()
+		return int(affected), nil
+	}
+	// Build placeholders for validIDs.
+	placeholders := ""
+	args := make([]interface{}, len(validIDs))
+	for i, id := range validIDs {
+		placeholders += "?,"
+		args[i] = id
+	}
+	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
+
+	// Delete chat records whose session_id not in validIDs.
+	chatSQL := "DELETE FROM chat_records WHERE session_id NOT IN (" + placeholders + ")"
+	if _, err := db.Exec(chatSQL, args...); err != nil {
+		return 0, err
+	}
+	// Delete sessions whose session_id not in validIDs.
+	sessSQL := "DELETE FROM sessions WHERE session_id NOT IN (" + placeholders + ")"
+	res, err := db.Exec(sessSQL, args...)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return int(affected), nil
 }
