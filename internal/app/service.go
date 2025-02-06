@@ -285,22 +285,22 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 				continue
 			}
 
-			select {
-			case <-botState.EditThrottler:
-				lastEditLen = len(responseContent)
-				if len(currentContent) > util.MessageCharacterLimit {
-					chunk := currentContent[:util.MessageCharacterLimit]
-					currentContent = currentContent[util.MessageCharacterLimit:]
-					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(false, chunk, session), botState.Bot, botState.Config.UseTelegramify)
-					outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, currentContent, session), botState.Bot, botState.Config.UseTelegramify)
-					if err != nil {
-						slog.Error(err.Error())
-						return
-					}
-				} else {
-					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, currentContent, session), botState.Bot, botState.Config.UseTelegramify)
+			lastEditLen = len(responseContent)
+			if len(currentContent) > util.MessageCharacterLimit {
+				chunk := currentContent[:util.MessageCharacterLimit]
+				currentContent = currentContent[util.MessageCharacterLimit:]
+				util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(false, chunk, session), botState.Bot, botState.Config.UseTelegramify)
+				outMsg, err = util.SendMessageMarkdown(inMsg.Chat.ID, wrapMessage(true, currentContent, session), botState.Bot, botState.Config.UseTelegramify)
+				if err != nil {
+					slog.Error(err.Error())
+					return
 				}
-			default:
+			} else {
+				select {
+				case <-botState.EditThrottler:
+					util.EditMessageMarkdown(outMsg.Chat.ID, outMsg.MessageID, wrapMessage(true, currentContent, session), botState.Bot, botState.Config.UseTelegramify)
+				default:
+				}
 			}
 		}
 	}
