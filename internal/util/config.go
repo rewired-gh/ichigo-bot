@@ -24,6 +24,7 @@ type Model struct {
 	Provider     string
 	Stream       bool
 	SystemPrompt bool
+	Temperature  bool
 }
 
 type Rejection struct {

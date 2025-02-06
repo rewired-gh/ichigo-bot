@@ -158,7 +158,10 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		Model:               model.Name,
 		MaxCompletionTokens: botState.Config.MaxTokensPerResponse,
 		Stream:              model.Stream,
-		Temperature:         session.Temperature,
+	}
+
+	if model.Temperature {
+		req.Temperature = session.Temperature
 	}
 
 	if !model.Stream {

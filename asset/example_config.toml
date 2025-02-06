@@ -26,6 +26,7 @@ Name = "o3-mini" # Model name for API request
 Provider = "openai" # Refer to the provider defined above
 Stream = false # o3-mini doesn't support streaming response
 SystemPrompt = false # o3-mini doesn't support system prompt
+Temperature = false # o3-mini doesn't support temperature
 
 [[Models]]
 Alias = "4o"
@@ -33,6 +34,7 @@ Name = "4o"
 Provider = "openai"
 Stream = true
 SystemPrompt = true
+Temperature = true
 
 [[Models]]
 Alias = "4o-gh"
@@ -40,6 +42,7 @@ Name = "4o"
 Provider = "gh"
 Stream = true
 SystemPrompt = true
+Temperature = true
 
 [[Blocklist]]
 ExceptSessions = true # If true, blocklist will be applied to all sessions except the listed ones
