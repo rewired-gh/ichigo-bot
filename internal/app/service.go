@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math" // added import
 
 	"github.com/rewired-gh/ichigo-bot/internal/util"
 	"github.com/sashabaranov/go-openai"
@@ -220,6 +221,11 @@ func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session
 	}
 }
 
+// editThreshold computes the throttling threshold: min( (x*x)/4000, 100 ).
+func editThreshold(x int) float64 {
+	return math.Min(float64(x*x)/4000.0, 100)
+}
+
 func processStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {
 	req.Stream = true
 	slog.Debug("starting streaming response",
@@ -273,7 +279,9 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 			deltaContent := resp.Choices[0].Delta.Content
 			responseContent += deltaContent
 			currentContent += deltaContent
-			if len(responseContent)-lastEditLen < 16 {
+
+			deltaLen := len(responseContent) - lastEditLen
+			if deltaLen < int(editThreshold(len(responseContent))) {
 				continue
 			}
 
