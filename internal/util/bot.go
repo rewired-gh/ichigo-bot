@@ -17,7 +17,7 @@ const SystemPromptString = `You're Ichigo, an AI assistant. You SHOULD follow th
 
 const ErrTooManyRequests = 429
 
-const MessageCharacterLimit = 4096 - 1
+const MessageCharacterLimit = 4096 - 64
 
 const markdownifyPython = `
 import sys

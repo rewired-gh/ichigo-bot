@@ -2,12 +2,12 @@ package util
 
 import "time"
 
-func NewThrottler(freqHz int) (throttler chan struct{}) {
+func NewThrottler(durationMillisecond int) (throttler chan struct{}) {
 	throttler = make(chan struct{}, 0)
 	go func() {
 		for {
 			throttler <- struct{}{}
-			time.Sleep(time.Second / time.Duration(freqHz))
+			time.Sleep(time.Millisecond * time.Duration(durationMillisecond))
 		}
 	}()
 	return
