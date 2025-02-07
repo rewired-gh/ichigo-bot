@@ -43,6 +43,7 @@ func OpenSessionDB(dataDir string) *sql.DB {
 		content TEXT,
 		FOREIGN KEY(session_id) REFERENCES sessions(session_id)
 	);
+	CREATE INDEX IF NOT EXISTS idx_chat_records_session_id ON chat_records(session_id);
 	`
 	if _, err := db.Exec(schema); err != nil {
 		slog.Error("failed to create tables", "error", err)
@@ -141,12 +142,12 @@ func TrimOldChatRecords(db *sql.DB, sessionID int64, keepCount int) {
 	stmt := `
 	DELETE FROM chat_records
 	WHERE session_id = ?
-	  AND id NOT IN (
-	    SELECT id FROM chat_records
-	    WHERE session_id = ?
-	    ORDER BY id DESC
-	    LIMIT ?
-	  );
+	    AND id NOT IN (
+	        SELECT id FROM chat_records
+	        WHERE session_id = ?
+	        ORDER BY id DESC
+	        LIMIT ?
+	    );
 	`
 	if _, err := db.Exec(stmt, sessionID, sessionID, keepCount); err != nil {
 		slog.Error("failed to trim chat records", "sessionID", sessionID, "error", err)
@@ -154,38 +155,47 @@ func TrimOldChatRecords(db *sql.DB, sessionID int64, keepCount int) {
 }
 
 func TidyObsoleteSessions(db *sql.DB, validIDs []int64) (int, error) {
-	// If no valid IDs, delete all sessions and chat records.
-	if len(validIDs) == 0 {
-		if _, err := db.Exec("DELETE FROM chat_records"); err != nil {
-			return 0, err
-		}
-		res, err := db.Exec("DELETE FROM sessions")
-		if err != nil {
-			return 0, err
-		}
-		affected, _ := res.RowsAffected()
-		return int(affected), nil
-	}
-	// Build placeholders for validIDs.
-	placeholders := ""
-	args := make([]interface{}, len(validIDs))
-	for i, id := range validIDs {
-		placeholders += "?,"
-		args[i] = id
-	}
-	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
-
-	// Delete chat records whose session_id not in validIDs.
-	chatSQL := "DELETE FROM chat_records WHERE session_id NOT IN (" + placeholders + ")"
-	if _, err := db.Exec(chatSQL, args...); err != nil {
-		return 0, err
-	}
-	// Delete sessions whose session_id not in validIDs.
-	sessSQL := "DELETE FROM sessions WHERE session_id NOT IN (" + placeholders + ")"
-	res, err := db.Exec(sessSQL, args...)
+	tx, err := db.Begin()
 	if err != nil {
 		return 0, err
 	}
-	affected, _ := res.RowsAffected()
+	defer tx.Rollback()
+
+	var affected int64
+	if len(validIDs) == 0 {
+		if _, err := tx.Exec("DELETE FROM chat_records"); err != nil {
+			return 0, err
+		}
+		res, err := tx.Exec("DELETE FROM sessions")
+		if err != nil {
+			return 0, err
+		}
+		affected, _ = res.RowsAffected()
+	} else {
+		placeholders := ""
+		args := make([]interface{}, len(validIDs))
+		for i, id := range validIDs {
+			placeholders += "?,"
+			args[i] = id
+		}
+		placeholders = placeholders[:len(placeholders)-1]
+
+		chatSQL := "DELETE FROM chat_records WHERE session_id NOT IN (" + placeholders + ")"
+		if _, err := tx.Exec(chatSQL, args...); err != nil {
+			return 0, err
+		}
+
+		sessSQL := "DELETE FROM sessions WHERE session_id NOT IN (" + placeholders + ")"
+		res, err := tx.Exec(sessSQL, args...)
+		if err != nil {
+			return 0, err
+		}
+		affected, _ = res.RowsAffected()
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
 	return int(affected), nil
 }
