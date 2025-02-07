@@ -66,6 +66,13 @@ func LoadConfig() (config Config, err error) {
 	viper.AddConfigPath("/etc/ichigod/")
 	viper.AddConfigPath("$HOME/.config/ichigod/")
 	viper.AddConfigPath(".")
+
+	viper.SetDefault("DefaultTemperature", 0.2)
+	viper.SetDefault("MaxTokensPerResponse", 4000)
+	viper.SetDefault("MaxChatRecordsPerUser", 32)
+	viper.SetDefault("UseTelegramify", true)
+	viper.SetDefault("Debug", false)
+
 	if err = viper.ReadInConfig(); err != nil {
 		slog.Error("failed to read config file", "error", err)
 		return
