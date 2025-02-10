@@ -147,6 +147,35 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		openaiMsgs = append(openaiMsgs, record.ToOpenAIChatMessage())
 	}
 
+	// Retreive photos if exists.
+	photos := inMsg.Photo
+	if photos != nil && len(photos) > 0 && len(openaiMsgs) > 0 {
+		multiContent := make([]openai.ChatMessagePart, 0, len(photos)+1)
+		multiContent = append(multiContent, openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeText,
+			Text: inMsg.Caption,
+		})
+
+		photo := photos[len(photos)-1]
+		base64Image, err := handlePhoto(botState, photo)
+		if err != nil {
+			slog.Error("failed to retrieve photo", "error", err.Error(), "file_id", photo.FileID, "file_size", photo.FileSize)
+		} else {
+			multiContent = append(multiContent, openai.ChatMessagePart{
+				Type: openai.ChatMessagePartTypeImageURL,
+				ImageURL: &openai.ChatMessageImageURL{
+					URL: base64Image,
+				},
+			})
+		}
+
+		lastMsg := openai.ChatCompletionMessage{
+			Role:         openai.ChatMessageRoleUser,
+			MultiContent: multiContent,
+		}
+		openaiMsgs[len(openaiMsgs)-1] = lastMsg
+	}
+
 	slog.Debug("sending request to AI provider",
 		"provider", model.Provider,
 		"model_name", model.Name,
@@ -169,6 +198,24 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 	} else {
 		processStreamingResponse(botState, inMsg, session, client, req)
 	}
+}
+
+func handlePhoto(botState *State, photo botapi.PhotoSize) (base64Image string, err error) {
+	url, err := botState.Bot.GetFileDirectURL(photo.FileID)
+	if err != nil {
+		return
+	}
+
+	bytes, err := util.DownloadFile(url, botState.Bot)
+	if err != nil {
+		return
+	}
+
+	base64Image, err = util.EncodeImageToBase64(bytes)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func processNonStreamingResponse(botState *State, inMsg *botapi.Message, session *Session, client *openai.Client, req openai.ChatCompletionRequest) {

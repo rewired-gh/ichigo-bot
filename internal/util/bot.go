@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"log/slog"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -18,6 +19,8 @@ const SystemPromptString = `You're Ichigo (いちご 🍓), an AI assistant. You
 const ErrTooManyRequests = 429
 
 const MessageCharacterLimit = 4096 - 64
+
+const tempDirName = "tmp"
 
 const markdownifyPython = `
 import sys
@@ -87,6 +90,21 @@ func convertToTelegramMarkdown(content string, useTelegramify bool) (converted s
 		converted = escapeTelegramMarkdownSimple(content)
 	}
 	return
+}
+
+func DownloadFile(fileID string, bot *botapi.BotAPI) ([]byte, error) {
+	fileURL, err := bot.GetFileDirectURL(fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Get(fileURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
 
 func SendMessageQuick(chatID int64, content string, bot *botapi.BotAPI) {
