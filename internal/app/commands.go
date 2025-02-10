@@ -138,6 +138,7 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 			session.ChatRecords = make([]ChatRecord, 0, 16)
 			session.Temperature = botState.Config.DefaultTemperature
 			session.Model = botState.Config.DefaultModel
+			tryStoppingResponse(session)
 		}
 		ClearAllMetadata(botState.DB)
 		ClearAllChatRecords(botState.DB)
