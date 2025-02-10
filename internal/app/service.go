@@ -141,7 +141,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		Content: util.SystemPromptString,
 	})
 	for _, record := range session.ChatRecords {
-		if record.Role == RoleBot && record.Content == "" {
+		if record.Content == "" {
 			continue
 		}
 		openaiMsgs = append(openaiMsgs, record.ToOpenAIChatMessage())
@@ -311,5 +311,12 @@ func tryStoppingResponse(session *Session) {
 	if session.State == StateResponding {
 		go func() { session.StopChannel <- struct{}{} }()
 		session.State = StateIdle
+	}
+}
+
+func tryDrainingResponseChannel(session *Session) {
+	select {
+	case <-session.ResponseChannel:
+	default:
 	}
 }

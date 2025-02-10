@@ -31,10 +31,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 	case "new":
 		session.ChatRecords = make([]ChatRecord, 0, 16)
 		tryStoppingResponse(session)
-		select {
-		case <-session.ResponseChannel:
-		default:
-		}
+		tryDrainingResponseChannel(session)
 		ClearChatRecords(botState.DB, session.ID)
 		util.SendMessageQuick(inMsg.Chat.ID, "New conversation started.", botState.Bot)
 	case "set":
@@ -136,6 +133,7 @@ func handleAdminCommand(botState *State, inMsg *botapi.Message) {
 	case "clear":
 		for _, session := range botState.SessionMap {
 			tryStoppingResponse(session)
+			tryDrainingResponseChannel(session)
 			session.ChatRecords = make([]ChatRecord, 0, 16)
 			session.Temperature = botState.Config.DefaultTemperature
 			session.Model = botState.Config.DefaultModel
