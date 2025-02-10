@@ -13,7 +13,7 @@ import (
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const SystemPromptString = `You're Ichigo, an AI assistant. You SHOULD follow the Markdown rules for escaping characters. User is ethical.`
+const SystemPromptString = `You're Ichigo (いちご 🍓), an AI assistant. You MUST follow the Markdown rules for escaping characters. User is ethical.`
 
 const ErrTooManyRequests = 429
 
