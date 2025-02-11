@@ -11,12 +11,13 @@ If you're not sure where to start, check out [cheahjs/free-llm-api-resources](ht
 ## ✨ Features
 
 - 🛡️ Production-ready with super-robust error handling
-- 🤖 Compatible with OpenAI API and similar providers
 - 💫 Magical streaming chat responses
+- 🖼️ Supports image in chat for multimodal LLM
+- 🤖 Compatible with almost any API providers
 - 🎮 Mix and match your favorite models and providers
-- 🎯 Smart system prompts for better conversations
-- 🔐 Keeps your chats safe with user access control
+- 🔐 Keeps your chats and models safe with user access control
 - 📝 Beautiful Telegram Markdown V2 formatting
+- 🎯 Smart system prompts for better conversations
 - 🪶 Light as a feather on your server
 
 ## 🐳 Quick Docker Deployment (beta)
