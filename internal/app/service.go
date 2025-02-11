@@ -64,7 +64,7 @@ func processUpdate(botState *State, update botapi.Update) {
 		}
 	}
 
-	if inMsg.IsCommand() {
+	if util.IsCommand(inMsg) {
 		handleCommand(botState, inMsg, session)
 	} else if inMsg.Chat.IsPrivate() {
 		handleChatAction(botState, inMsg, session)

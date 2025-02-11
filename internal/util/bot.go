@@ -152,3 +152,20 @@ func EditMessageMarkdown(chatID int64, messageID int, content string, bot *botap
 		}
 	}
 }
+
+func IsCommand(msg *botapi.Message) bool {
+	re := regexp.MustCompile(`^/\w+(?:@\w+)?`)
+	return msg.IsCommand() || re.MatchString(msg.Caption)
+}
+
+func GetCommand(msg *botapi.Message) string {
+	re := regexp.MustCompile(`^/(\w+)(?:@\w+)?`)
+	if msg.IsCommand() {
+		return msg.Command()
+	}
+	matches := re.FindStringSubmatch(msg.Caption)
+	if len(matches) < 2 {
+		return ""
+	}
+	return matches[1]
+}

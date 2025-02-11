@@ -20,7 +20,8 @@ var helpTxt string
 
 // handleCommand interprets incoming bot commands.
 func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
-	cmd := inMsg.Command()
+	cmd := util.GetCommand(inMsg)
+
 	slog.Info("processing command",
 		"command", cmd,
 		"user_id", inMsg.From.ID)
