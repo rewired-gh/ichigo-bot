@@ -201,12 +201,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 }
 
 func handlePhoto(botState *State, photo botapi.PhotoSize) (base64Image string, err error) {
-	url, err := botState.Bot.GetFileDirectURL(photo.FileID)
-	if err != nil {
-		return
-	}
-
-	bytes, err := util.DownloadFile(url, botState.Bot)
+	bytes, err := util.DownloadFile(photo.FileID, botState.Bot)
 	if err != nil {
 		return
 	}
