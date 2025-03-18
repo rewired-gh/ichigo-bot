@@ -133,7 +133,9 @@ func New(config *util.Config) (state *State) {
 				session.Model = stored.Model
 			}
 			session.Temperature = stored.Temperature
-			session.Prompt = stored.Prompt
+			if _, ok := state.CachedPromptMap[stored.Prompt]; ok {
+				session.Prompt = stored.Prompt
+			}
 			if len(stored.ChatRecords) > 0 {
 				session.ChatRecords = stored.ChatRecords
 			}
