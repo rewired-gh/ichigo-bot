@@ -6,6 +6,8 @@ undo - Remove last conversation round
 stop - Stop the current response
 help - Get the list of commands
 set_temp - Set text completion temperature
+list_prompts - List available system prompts
+set_prompt - Set system prompt
 get_config - (Admin only) View current configuration
 set_config - (Admin only) Update configuration and shutdown
 clear - (Admin only) Clear data

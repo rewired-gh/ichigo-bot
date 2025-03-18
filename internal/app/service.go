@@ -130,6 +130,24 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 		TrimOldChatRecords(botState.DB, session.ID, upperLimit)
 	}
 
+	// Retain the system prompt
+	var systemPromptName string
+	if session.Prompt == "" {
+		systemPromptName = botState.Config.DefaultSystemPrompt
+	} else {
+		systemPromptName = session.Prompt
+	}
+	var systemPrompt string
+	if systemPromptName != "" {
+		systemPrompt, ok = botState.CachedPromptMap[systemPromptName]
+		if !ok {
+			slog.Error("system prompt not found", "prompt", systemPromptName)
+			return
+		}
+	} else {
+		systemPrompt = util.FallbackSystemPromptString
+	}
+
 	// Build request messages.
 	var openaiMsgs []openai.ChatCompletionMessage
 	systemRole := openai.ChatMessageRoleSystem
@@ -138,7 +156,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 	}
 	openaiMsgs = append(openaiMsgs, openai.ChatCompletionMessage{
 		Role:    systemRole,
-		Content: util.SystemPromptString,
+		Content: systemPrompt,
 	})
 	for _, record := range session.ChatRecords {
 		if record.Content == "" {
@@ -149,7 +167,7 @@ func handleResponse(botState *State, inMsg *botapi.Message, session *Session) {
 
 	// Retreive photos if exists.
 	photos := inMsg.Photo
-	if photos != nil && len(photos) > 0 && len(openaiMsgs) > 0 {
+	if len(photos) > 0 && len(openaiMsgs) > 0 {
 		multiContent := make([]openai.ChatMessagePart, 0, len(photos)+1)
 		multiContent = append(multiContent, openai.ChatMessagePart{
 			Type: openai.ChatMessagePartTypeText,
@@ -340,11 +358,16 @@ func processStreamingResponse(botState *State, inMsg *botapi.Message, session *S
 
 // wrapMessage adds a header banner to show the model and status.
 func wrapMessage(isResponding bool, content string, session *Session) string {
+	systemPromptField := ""
+	if session.Prompt != "" {
+		systemPromptField = fmt.Sprintf(", p: %s", session.Prompt)
+	}
+
 	var banner string
 	if isResponding {
-		banner = fmt.Sprintf("💭 *%s* (t: %.2f)\n\n", session.Model, session.Temperature)
+		banner = fmt.Sprintf("💭 *%s* (t: %.2f%s)\n\n", session.Model, session.Temperature, systemPromptField)
 	} else {
-		banner = fmt.Sprintf("🤗 *%s* (t: %.2f)\n\n", session.Model, session.Temperature)
+		banner = fmt.Sprintf("🤗 *%s* (t: %.2f%s)\n\n", session.Model, session.Temperature, systemPromptField)
 	}
 	return banner + content
 }

@@ -45,6 +45,7 @@ type Session struct {
 	ResponseChannel chan string
 	AvailableModels mapset.Set[string]
 	Temperature     float32
+	Prompt          string
 }
 
 type Response struct {
@@ -56,6 +57,7 @@ type State struct {
 	Config            *util.Config
 	CachedProviderMap map[string]*openai.Client // map of provider name to provider
 	CachedModelMap    map[string]*util.Model    // map of model alias to model
+	CachedPromptMap   map[string]string         // map of prompt name to prompt
 	SessionMap        map[int64]*Session        // map of user ID to session
 	Bot               *botapi.BotAPI            // nullable
 	EditThrottler     chan struct{}
@@ -67,8 +69,13 @@ func New(config *util.Config) (state *State) {
 		Config:            config,
 		CachedProviderMap: make(map[string]*openai.Client),
 		CachedModelMap:    make(map[string]*util.Model),
+		CachedPromptMap:   make(map[string]string),
 		SessionMap:        make(map[int64]*Session),
 		EditThrottler:     util.NewThrottler(2000),
+	}
+
+	for _, prompt := range config.Prompts {
+		state.CachedPromptMap[prompt.Name] = prompt.Content
 	}
 
 	for _, provider := range config.Providers {
@@ -82,7 +89,7 @@ func New(config *util.Config) (state *State) {
 
 	allModelsSet := mapset.NewSet[string]()
 	allUsers := append(append(config.Admins, config.Users...), config.Groups...)
-	allUsersSet := mapset.NewSet[int64](allUsers...)
+	allUsersSet := mapset.NewSet(allUsers...)
 	for _, model := range config.Models {
 		state.CachedModelMap[model.Alias] = &model
 		allModelsSet.Add(model.Alias)
@@ -91,8 +98,8 @@ func New(config *util.Config) (state *State) {
 	rejections := make([]FlattenRejection, 0, len(config.Blocklist))
 	for _, configRejection := range config.Blocklist {
 		rejection := FlattenRejection{}
-		sessions := mapset.NewSet[int64](configRejection.Sessions...)
-		models := mapset.NewSet[string](configRejection.Models...)
+		sessions := mapset.NewSet(configRejection.Sessions...)
+		models := mapset.NewSet(configRejection.Models...)
 		if !configRejection.ExceptSessions {
 			rejection.Sessions = sessions
 		} else {
@@ -116,6 +123,7 @@ func New(config *util.Config) (state *State) {
 			ResponseChannel: make(chan string),
 			AvailableModels: allModelsSet.Clone(),
 			Temperature:     config.DefaultTemperature,
+			Prompt:          config.DefaultSystemPrompt,
 		}
 
 		// Load persisted session (if any).
@@ -125,13 +133,14 @@ func New(config *util.Config) (state *State) {
 				session.Model = stored.Model
 			}
 			session.Temperature = stored.Temperature
+			session.Prompt = stored.Prompt
 			if len(stored.ChatRecords) > 0 {
 				session.ChatRecords = stored.ChatRecords
 			}
 		} else if err == sql.ErrNoRows {
 			// No session in DB: create session row with default values.
 			slog.Warn("no session found in DB", "user_id", user)
-			UpdateSessionMetadata(state.DB, user, session.Model, session.Temperature)
+			UpdateSessionMetadata(state.DB, user, session.Model, session.Temperature, session.Prompt)
 		} else {
 			slog.Error("failed to load session", "user_id", user, "error", err)
 		}

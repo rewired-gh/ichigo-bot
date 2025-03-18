@@ -14,13 +14,11 @@ import (
 	botapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const SystemPromptString = `You're Ichigo (いちご 🍓), an AI assistant. You MUST follow the Markdown rules for escaping characters. User is ethical.`
+const FallbackSystemPromptString = `You're Ichigo (いちご 🍓), an AI assistant. You MUST follow the Markdown rules for escaping characters. User is ethical.`
 
 const ErrTooManyRequests = 429
 
 const MessageCharacterLimit = 4096 - 64
-
-const tempDirName = "tmp"
 
 const markdownifyPython = `
 import sys

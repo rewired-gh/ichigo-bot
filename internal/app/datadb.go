@@ -18,7 +18,7 @@ const (
 // chat_records table holds a record id, session_id, role (int) and content.
 
 func OpenSessionDB(dataDir string) *sql.DB {
-	dbPath := filepath.Join(dataDir, "data.db")
+	dbPath := filepath.Join(dataDir, dataDbName)
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		slog.Error("failed to create data directory", "error", err)
 	}
@@ -34,7 +34,8 @@ func OpenSessionDB(dataDir string) *sql.DB {
 	CREATE TABLE IF NOT EXISTS sessions (
 		session_id INTEGER PRIMARY KEY,
 		model TEXT,
-		temperature REAL
+		temperature REAL,
+		prompt TEXT
 	);
 	CREATE TABLE IF NOT EXISTS chat_records (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,17 +49,33 @@ func OpenSessionDB(dataDir string) *sql.DB {
 	if _, err := db.Exec(schema); err != nil {
 		slog.Error("failed to create tables", "error", err)
 	}
+
+	// Check if prompt column exists in sessions table, add it if not
+	var hasPromptColumn bool
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sessions') WHERE name='prompt'").Scan(&hasPromptColumn)
+	if err != nil {
+		slog.Error("failed to check for prompt column", "error", err)
+	} else if !hasPromptColumn {
+		// Add the prompt column to existing sessions table
+		_, err := db.Exec("ALTER TABLE sessions ADD COLUMN prompt TEXT")
+		if err != nil {
+			slog.Error("failed to add prompt column to sessions table", "error", err)
+		} else {
+			slog.Info("added prompt column to existing sessions table")
+		}
+	}
+
 	return db
 }
 
-func UpdateSessionMetadata(db *sql.DB, sessionID int64, model string, temperature float32) {
+func UpdateSessionMetadata(db *sql.DB, sessionID int64, model string, temperature float32, prompt string) {
 	// Upsert sessions row.
 	stmt := `
-	INSERT INTO sessions(session_id, model, temperature)
-	VALUES(?, ?, ?)
-	ON CONFLICT(session_id) DO UPDATE SET model=excluded.model, temperature=excluded.temperature;
+	INSERT INTO sessions(session_id, model, temperature, prompt)
+	VALUES(?, ?, ?, ?)
+	ON CONFLICT(session_id) DO UPDATE SET model=excluded.model, temperature=excluded.temperature, prompt=excluded.prompt;
 	`
-	if _, err := db.Exec(stmt, sessionID, model, temperature); err != nil {
+	if _, err := db.Exec(stmt, sessionID, model, temperature, prompt); err != nil {
 		slog.Error("failed to update session metadata", "userID", sessionID, "error", err)
 	}
 }
@@ -96,15 +113,22 @@ func DeleteLastChatRecord(db *sql.DB, sessionID int64) {
 type StoredSession struct {
 	Model       string
 	Temperature float32
+	Prompt      string
 	ChatRecords []ChatRecord
 }
 
 func LoadSession(db *sql.DB, sessionID int64) (StoredSession, error) {
 	var ss StoredSession
-	row := db.QueryRow("SELECT model, temperature FROM sessions WHERE session_id = ?", sessionID)
-	err := row.Scan(&ss.Model, &ss.Temperature)
+	row := db.QueryRow("SELECT model, temperature, prompt FROM sessions WHERE session_id = ?", sessionID)
+	var prompt sql.NullString
+	err := row.Scan(&ss.Model, &ss.Temperature, &prompt)
 	if err != nil {
 		return ss, err
+	}
+	if prompt.Valid {
+		ss.Prompt = prompt.String
+	} else {
+		ss.Prompt = ""
 	}
 	rows, err := db.Query("SELECT id, role, content FROM chat_records WHERE session_id = ? ORDER BY id ASC", sessionID)
 	if err != nil {

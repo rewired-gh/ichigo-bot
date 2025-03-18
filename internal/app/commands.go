@@ -49,7 +49,7 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 			return
 		}
 		session.Model = modelAlias
-		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
+		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature, session.Prompt)
 		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current model: %s (%s) by %s", model.Name, modelAlias, model.Provider), botState.Bot)
 	case "list":
 		modelList := "Available models:\n"
@@ -84,10 +84,26 @@ func handleCommand(botState *State, inMsg *botapi.Message, session *Session) {
 			return
 		}
 		session.Temperature = float32(temp)
-		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature)
+		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature, session.Prompt)
 		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current temperature: %.2f.", temp), botState.Bot)
 	case "help":
 		util.SendMessageQuick(inMsg.Chat.ID, helpTxt, botState.Bot)
+	case "list_prompts":
+		promptList := "Available system prompts:\n"
+		for name := range botState.CachedPromptMap {
+			promptList += fmt.Sprintf("%s\n", name)
+		}
+		util.SendMessageQuick(inMsg.Chat.ID, promptList, botState.Bot)
+	case "set_prompt":
+		promptName := inMsg.CommandArguments()
+		if _, ok := botState.CachedPromptMap[promptName]; !ok {
+			slog.Warn("system prompt not found", "prompt", promptName)
+			util.SendMessageQuick(inMsg.Chat.ID, "System prompt not found.", botState.Bot)
+			return
+		}
+		session.Prompt = promptName
+		UpdateSessionMetadata(botState.DB, session.ID, session.Model, session.Temperature, session.Prompt)
+		util.SendMessageQuick(inMsg.Chat.ID, fmt.Sprintf("Current system prompt: %s.", promptName), botState.Bot)
 	default:
 		if isAdmin(botState.Config.Admins, inMsg.From.ID) {
 			handleAdminCommand(botState, inMsg)

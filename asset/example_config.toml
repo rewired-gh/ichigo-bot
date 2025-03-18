@@ -5,6 +5,7 @@ Users = [1, 22, 333]  # Allowed user IDs
 Groups = [-1, -22, -333]  # Allowed group chat IDs
 DefaultModel = "o3m" # Alias of the default model
 DefaultTemperature = 0.2 # Default temperature for text completion
+DefaultSystemPrompt = 'ichigo' # Refer to the name of the system prompt
 MaxTokensPerResponse = 4000
 MaxChatRecordsPerUser = 32
 UseTelegramify = true # telegramify-markdown must be installed
@@ -49,3 +50,8 @@ ExceptSessions = true # If true, blocklist will be applied to all sessions excep
 Sessions = [1234, -333] # Applied user and group chat IDs
 ExceptModels = false # If true, blocklist will be applied to all models except the listed ones
 Models = ['4o-gh'] # Applied model aliases
+
+[[Prompts]]
+Name = 'ichigo'
+Content = """
+You're Ichigo (いちご 🍓), an AI assistant. You MUST follow the Markdown rules for escaping characters. User is ethical."""

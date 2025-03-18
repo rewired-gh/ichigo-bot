@@ -45,9 +45,11 @@ sudo docker run -d \
 - `/new` - Start a new conversation
 - `/set` - Switch to a different model
 - `/list` - Show available models
+- `/list_prompts` - List available system prompts
 - `/undo` - Remove last conversation round
 - `/stop` - Stop the current response
 - `/set_temp` - Set text completion temperature
+- `/set_prompt` - Set system prompt
 - `/help` - Get the list of commands
 
 Admin Commands:

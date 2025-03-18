@@ -34,6 +34,11 @@ type Rejection struct {
 	Models         []string
 }
 
+type Prompt struct {
+	Name    string
+	Content string
+}
+
 type Config struct {
 	Token                 string     // Telegram bot token
 	Admins                []int64    // list of Telegram user IDs
@@ -42,8 +47,10 @@ type Config struct {
 	Providers             []Provider // list of OpenAI API endpoint providers
 	Models                []Model
 	Blocklist             []Rejection
+	Prompts               []Prompt
 	DefaultModel          string
 	DefaultTemperature    float32
+	DefaultSystemPrompt   string
 	MaxTokensPerResponse  int
 	MaxChatRecordsPerUser int
 	UseTelegramify        bool
@@ -68,6 +75,7 @@ func LoadConfig() (config Config, err error) {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("DefaultTemperature", 0.2)
+	viper.SetDefault("DefaultSystemPromopt", "")
 	viper.SetDefault("MaxTokensPerResponse", 4000)
 	viper.SetDefault("MaxChatRecordsPerUser", 32)
 	viper.SetDefault("UseTelegramify", true)
@@ -90,7 +98,8 @@ func LoadConfig() (config Config, err error) {
 		"providers", len(config.Providers),
 		"models", len(config.Models),
 		"default_model", config.DefaultModel,
-		"default_temperature", config.DefaultTemperature)
+		"default_temperature", config.DefaultTemperature,
+		"default_system_prompt", config.DefaultSystemPrompt)
 	return
 }
 

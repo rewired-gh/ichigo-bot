@@ -43,9 +43,11 @@ sudo docker run -d \
 - `/new` - 开始新的对话
 - `/set` - 切换到不同的模型
 - `/list` - 显示可用模型
+- `/list_prompts` - 列出可用的系统提示词
 - `/undo` - 移除最后一轮对话
 - `/stop` - 停止当前响应
 - `/set_temp` - 设置文本补全温度
+- `/set_prompt` - 设置系统提示词
 - `/help` - 获取命令列表
 
 管理命令：
